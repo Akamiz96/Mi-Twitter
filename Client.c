@@ -41,7 +41,7 @@ int main (int argc, char **argv)
       sleep(5);
     } else
       creado = 1;
-  } while (creado == 0);
+  } while (!creado);
 
   user.id = atoi(argv[1]);
   strcpy(user.pipe_cliente, "cliente_");
@@ -54,7 +54,12 @@ int main (int argc, char **argv)
     exit(1);
   }
   // se envia el nombre del pipe al otro proceso.
-  write(server, &user , sizeof(cliente));
+  if(write(server, &user , sizeof(cliente)) == -1)
+  {
+    perror("En escritura");
+    exit(1);
+  }
+    //TODO mandar señal
 
   // Se abre el segundo pipe
   creado = 0;
@@ -64,11 +69,14 @@ int main (int argc, char **argv)
       sleep(5);
     } else
       creado = 1;
-  } while (creado == 0);
+  } while (!creado);
 
    // Se lee un mensaje por el segundo pipe.
-
-  read(user.pipe_id, mensaje, 10);
+  if(read(user.pipe_id, mensaje, 10) == -1)
+  {
+    perror("En lectura");
+    exit(1);
+  }
   printf("El proceso cliente termina y lee %s \n", mensaje);
   exit(0);
 }

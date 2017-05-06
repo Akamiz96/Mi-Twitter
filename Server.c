@@ -40,7 +40,7 @@ int main (int argc, char **argv)
   server = open(argv[4], O_RDONLY);
   // El otro proceso (nom1) le envia el nombre para el nuevo pipe y el pid.
   if (read (server, &user, sizeof(cliente)) == -1) {
-    perror("proceso lector");
+    perror("En lectura");
     exit(1);
   }
   printf ("Lei el cliente %d\n", user.id);
@@ -51,12 +51,17 @@ int main (int argc, char **argv)
       printf(" Se volvera a intentar despues\n");
       sleep(5); //los unicos sleeps que deben colocar son los que van en los ciclos para abrir los pipes.
       } else creado = 1;
-   }  while (creado == 0);
+   }  while (!creado);
 
 
     // Se escribe un mensaje para el  proceso (nom1)
 
-   write(pipe_cliente, "hola", 5);
+   if(write(pipe_cliente, "hola", 5) == -1)
+   {
+     perror("En escritura");
+     exit(1);
+   }
+   //TODO mandar señal
    exit(0);
 
 }
