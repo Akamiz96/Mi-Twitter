@@ -77,7 +77,7 @@ void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], EnvioCliente m
     id_cliente = buscar_cliente_pid(N, clientes, aux.pid);
     if(id_cliente != -1)
     {
-      if(grafo[id_cliente][aux.id] == 1)
+      if(grafo[id_cliente][aux.id] == 0)
       {
         grafo[id_cliente][aux.id] = 1;
         mensaje_server.respuesta = EXITO;
@@ -107,7 +107,7 @@ void unfollow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], EnvioCliente
     id_cliente = buscar_cliente_pid(N, clientes, aux.pid);
     if(id_cliente != -1)
     {
-      if(grafo[id_cliente][aux.id] == 0)
+      if(grafo[id_cliente][aux.id] == 1)
       {
         grafo[id_cliente][aux.id] = 0;
         mensaje_server.respuesta = EXITO;

@@ -6,7 +6,7 @@
 #define 				LINE 			160
 
 
-typedef enum {REGISTER, FOLLOW, UNFOLLOW, TWEET_C, RE_TWEETS} Operacion;
+typedef enum {REGISTER, FOLLOW, UNFOLLOW, TWEET_C, RE_TWEETS, DESCONEXION} Operacion;
 typedef enum {EXITO, FALLO, TWEET, SINCRONO, ASINCRONO, INVALIDO} Respuesta;
 
 typedef struct BMP
