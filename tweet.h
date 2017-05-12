@@ -33,5 +33,8 @@ typedef struct cliente
 {
 	int id;
 	int pipe_id;
+	pid_t pid;
 	char pipe_cliente[MAXCHAR];
 } cliente;
+
+typedef enum {REGISTER, FOLLOW, UNFOLLOW, TWEET, RE_TWEETS};

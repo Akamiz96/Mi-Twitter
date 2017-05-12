@@ -14,14 +14,20 @@ Nota: todas las llamadas al sistema no estan validadas.
 #include <string.h>
 #include "tweet.h"
 
+typedef void (*sighandler_t)(int);
 
 cliente user;
-char mensaje[10];
+int message;
 
+sighandler_t tweet_recive(void)
+{
+  message = read(user.pipe_id, datos, sizeof(tweet));
+  printf("%s\n", datos.texto);
+}
 
 int main (int argc, char **argv)
 {
-  int  server, pid, creado = 0, res;
+  int  server, creado = 0, desconexion = 0, opcion;
   tweet datos;
 
   mode_t fifo_mode = S_IRUSR | S_IWUSR;
@@ -44,6 +50,7 @@ int main (int argc, char **argv)
   } while (!creado);
 
   user.id = atoi(argv[1]);
+  user.pid = getpid();
   strcpy(user.pipe_cliente, "cliente_");
   strcat(user.pipe_cliente, argv[1]+'\0');
 
@@ -59,7 +66,6 @@ int main (int argc, char **argv)
     perror("En escritura");
     exit(1);
   }
-    //TODO mandar señal
 
   // Se abre el segundo pipe
   creado = 0;
@@ -72,11 +78,39 @@ int main (int argc, char **argv)
   } while (!creado);
 
    // Se lee un mensaje por el segundo pipe.
-  if(read(user.pipe_id, mensaje, 10) == -1)
+  if(message == -1)
   {
     perror("En lectura");
     exit(1);
   }
-  printf("El proceso cliente termina y lee %s \n", mensaje);
+  do
+  {
+    printf("Menu:\n\
+            1. Follow\
+            2. Unfollow\
+            3. Tweet\
+            4. Recuperar tweets\
+            5. Desconexion" );
+    scanf("%d\n", opcion);
+    switch (opcion) {
+      case 1:
+        //TODO Follow
+        break;
+      case 2:
+        //TODO Unfollow
+        break;
+      case 3:
+        //TODO Tweet
+        break;
+      case 4:
+        //TODO Recuperar
+        break;
+      case 5:
+        //TODO Desconexion
+        break;
+      default:
+        printf("Opcion Invalida\nIntente de nuevo");
+    }
+  } while(!desconexion);
   exit(0);
 }
