@@ -14,14 +14,16 @@ Nota: todas las llamadas al sistema no estan validadas.
 #include <string.h>
 #include "tweet.h"
 
-
 cliente user;
-#define TAMNOM 20
 
 int main (int argc, char **argv)
 {
-  int server, pipe_cliente,  pid, n, cuantos,res,creado=0;
+  int server, pipe_cliente,  pid, N, cuantos, res, creado = 0;
+  int grafo[TAMUSR][TAMUSR], i, j;
   tweet datos;
+  FILE* file;
+  char buffer[LINE];
+  Cliente cliente[TAMUSR];
 
   mode_t fifo_mode = S_IRUSR | S_IWUSR;
   if(argc != 5)
@@ -29,6 +31,20 @@ int main (int argc, char **argv)
     printf("Error\nDebe ser ejecutado de la forma: %s N relaciones modo pipeNom\n", argv[0]);
     exit(1);
   }
+  N = atoi(argv[1]);
+  file = fopen(argv[2], "r");
+  if(file == NULL)
+  {
+    printf("Error al abrir el archivo %s\n", argv[2]);
+    return 1;
+  }
+  for(i = 0; (i < N) && (!feof(file)); i++)
+  {
+    fgets(buffer, LINE, file);
+    for(j = 0; j < N && (buffer[j * 2] != '\0'); j++)
+      grafo[i][j] = buffer[j * 2] == '1';
+  }
+  fclose ( file );
   // Creacion del pipe inicial, el que se recibe como argumento del main
   unlink(argv[4]);
   if (mkfifo (argv[4], fifo_mode) == -1) {

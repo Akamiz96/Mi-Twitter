@@ -1,7 +1,9 @@
-#define         TAM      500
-#define         RUTA     45
-#define         NPIXEL   3
-#define         MAXCHAR  140
+#define         TAM      	500
+#define         RUTA     	45
+#define         NPIXEL   	3
+#define         MAXCHAR		140
+#define 				TAMUSR 	 	80
+#define 				LINE 			160
 
 typedef struct BMP
 {
