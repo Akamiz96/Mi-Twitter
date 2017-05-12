@@ -49,7 +49,7 @@ void registrar(int N, Cliente clientes[], EnvioCliente mensaje_cliente)
   EnvioServer mensaje_server;
   if(aux.id <= N && aux.id >= 1 )
   {
-    if(clientes[aux.id - 1].id != -1)
+    if(clientes[aux.id - 1].id == -1)
     {
       clientes[aux.id - 1] = mensaje_cliente.cliente;
       clientes[aux.id - 1].pipe_id = abrir_pipe(aux.pipe_cliente, O_WRONLY);

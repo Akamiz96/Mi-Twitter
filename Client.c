@@ -139,7 +139,7 @@ int main (int argc, char **argv)
     printf("Error\nDebe ser ejecutado de la forma: %s ID pipe_server \n",argv[0]);
     exit(1);
   }
-
+  strcpy(user.pipe_cliente, argv[2]);
   // Se crea el pipe del cliente
   unlink(user.pipe_cliente);
   if (mkfifo (user.pipe_cliente, fifo_mode) == -1) {
@@ -155,6 +155,7 @@ int main (int argc, char **argv)
   strcat(user.pipe_cliente, argv[1]+'\0');
 
   // se envia el nombre del pipe al otro proceso.
+  printf("HOLA");
   registrar(envioCliente, envioServer, user, server);
   // Se abre el segundo pipe
   user.pipe_id = abrir_pipe(user.pipe_cliente, O_RDONLY);
