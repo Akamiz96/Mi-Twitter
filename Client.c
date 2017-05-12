@@ -16,18 +16,38 @@ Nota: todas las llamadas al sistema no estan validadas.
 
 typedef void (*sighandler_t)(int);
 
-cliente user;
-int message;
+Cliente user;
+
+int abrir_pipe(const char* pathname, int flags)
+{
+  int abierto = 0, id_pipe;
+  do {
+    id_pipe = open(pathname, flags);
+    if (id_pipe == -1) {
+      perror(pathname);
+      printf(" Se volvera a intentar despues\n");
+      sleep(5);
+    } else
+      abierto = 1;
+  } while (!abierto);
+  return id_pipe;
+}
 
 sighandler_t tweet_recive(void)
 {
-  message = read(user.pipe_id, datos, sizeof(tweet));
+  // Se lee un mensaje por el segundo pipe.
+  if(read(user.pipe_id, datos, sizeof(tweet) == -1)
+  {
+   perror("En lectura");
+   exit(1);
+  }
   printf("%s\n", datos.texto);
 }
 
+
 int main (int argc, char **argv)
 {
-  int  server, creado = 0, desconexion = 0, opcion;
+  int  server, desconexion = 0, opcion;
   tweet datos;
 
   mode_t fifo_mode = S_IRUSR | S_IWUSR;
@@ -38,28 +58,20 @@ int main (int argc, char **argv)
     exit(1);
   }
 
+  // Se crea el pipe del cliente
+  unlink(user.pipe_cliente);
+  if (mkfifo (user.pipe_cliente, fifo_mode) == -1) {
+    perror("pipe_cliente mkfifo");
+    exit(1);
+  }
   // Se abre el pipe cuyo nombre se recibe como argumento del main.
-  do {
-    server = open(argv[2], O_WRONLY);
-    if (server == -1) {
-      perror("pipe_server");
-      printf(" Se volvera a intentar despues\n");
-      sleep(5);
-    } else
-      creado = 1;
-  } while (!creado);
+  server = abrir_pipe(argv[2], O_WRONLY);
 
   user.id = atoi(argv[1]);
   user.pid = getpid();
   strcpy(user.pipe_cliente, "cliente_");
   strcat(user.pipe_cliente, argv[1]+'\0');
 
-  // Se crea un segundo pipe
-  unlink(user.pipe_cliente);
-  if (mkfifo (user.pipe_cliente, fifo_mode) == -1) {
-    perror("pipe_cliente mkfifo");
-    exit(1);
-  }
   // se envia el nombre del pipe al otro proceso.
   if(write(server, &user , sizeof(cliente)) == -1)
   {
@@ -68,21 +80,8 @@ int main (int argc, char **argv)
   }
 
   // Se abre el segundo pipe
-  creado = 0;
-  do {
-    if ((user.pipe_id = open(user.pipe_cliente, O_RDONLY)) == -1) {
-      perror("Cliente Abriendo el segundo pipe. Se volvera a intentar ");
-      sleep(5);
-    } else
-      creado = 1;
-  } while (!creado);
+  user.pipe_id = abrir_pipe(user.pipe_cliente, O_RDONLY);
 
-   // Se lee un mensaje por el segundo pipe.
-  if(message == -1)
-  {
-    perror("En lectura");
-    exit(1);
-  }
   do
   {
     printf("Menu:\n\
