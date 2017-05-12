@@ -3,6 +3,10 @@
 #define         NPIXEL   3
 #define         MAXCHAR  140
 
+
+typedef enum {REGISTER, FOLLOW, UNFOLLOW, TWEET, RE_TWEETS} Operacion;
+typedef enum {EXITO, FALLO, TWEET, SINCRONO, ASINCRONO, INVALIDO} Respuesta;
+
 typedef struct BMP
 {
 	char bm[2];					//(2 Bytes) BM (Tipo de archivo)
@@ -23,18 +27,29 @@ typedef struct BMP
 	unsigned char pixel[TAM][TAM][NPIXEL]; 			//Puntero a una tabla dinamica de caracteres de 3 dimensiones para almacenar los pixeles
 }BMP;
 
-typedef struct tweet
+typedef struct Tweet
 {
   char texto[MAXCHAR];
   BMP imagen;
-} tweet;
+} Tweet;
 
-typedef struct cliente
+typedef struct Cliente
 {
 	int id;
 	int pipe_id;
 	pid_t pid;
 	char pipe_cliente[MAXCHAR];
-} cliente;
+} Cliente;
 
-typedef enum {REGISTER, FOLLOW, UNFOLLOW, TWEET, RE_TWEETS};
+typedef struct EnvioCliente
+{
+	Operacion operacion;
+	Tweet tweet;
+	Cliente cliente;
+}EnvioCliente;
+
+typedef struct EnvioServer
+{
+	Respuesta respuesta;
+	Tweet tweet;
+}EnvioServer;
