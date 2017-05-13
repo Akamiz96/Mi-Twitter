@@ -226,11 +226,12 @@ int main (int argc, char **argv)
     printf("Error al abrir el archivo %s\n", argv[2]);
     return 1;
   }
-  for(i = 0; (i < N) && (!feof(file)); i++)
+  for(i = 0; i < N; i++)
   {
     fgets(buffer, LINE, file);
-    for(j = 0; j < N && (buffer[j * 2] != '\0'); j++)
+    for(j = 0; j < N && (buffer[j * 2] != '\0'); j++){
       grafo[i][j] = buffer[j * 2] == '1';
+    }
   }
   fclose ( file );
   if(strcasecmp(argv[3],"sincrono"))

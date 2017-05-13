@@ -31,6 +31,7 @@ typedef struct BMP
 
 typedef struct Tweet
 {
+	int id;
   char texto[MAXCHAR];
   BMP imagen;
 } Tweet;
