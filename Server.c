@@ -19,13 +19,14 @@ int abrir_pipe(const char* pathname, int flags)
   int abierto = 0, id_pipe;
   do {
     id_pipe = open(pathname, flags);
+    printf("abrir_pipe\n");
     if (id_pipe == -1) {
       perror(pathname);
       printf(" Se volvera a intentar despues\n");
       sleep(5);
     } else
       abierto = 1;
-  } while (!abierto);
+  } while (abierto != 1);
   return id_pipe;
 }
 
@@ -194,10 +195,10 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
 int main (int argc, char **argv)
 {
   int server,  pid, N, cuantos, res, creado = 0;
-  int grafo[TAMUSR][TAMUSR], i, j;
+  int grafo[TAMUSR][TAMUSR], i, j, line = LINE;
   Tweet datos;
   FILE* file;
-  char buffer[LINE];
+  char *buffer;
   Cliente clientes[TAMUSR];
   EnvioCliente mensaje_cliente;
   EnvioServer mensaje_server;
@@ -228,9 +229,9 @@ int main (int argc, char **argv)
   }
   for(i = 0; i < N; i++)
   {
-    fgets(buffer, LINE, file);
+    getline(&buffer, (size_t*)&line, file);
     for(j = 0; j < N && (buffer[j * 2] != '\0'); j++){
-      grafo[i][j] = buffer[j * 2] == '1';
+      grafo[i][j] = (buffer[j * 2] == '1');
     }
   }
   fclose ( file );
@@ -252,8 +253,10 @@ int main (int argc, char **argv)
   }
 
   // Abre el pipe. No olviden validar todas las llmadas al sistema.
+  printf("salio de lectura %d %d\n", i, j);
   server = abrir_pipe(argv[4], O_RDONLY);
   // El otro proceso (nom1) le envia el nombre para el nuevo pipe y el pid.
+  printf("entra a whie\n");
   while (1)
   {
     if (read (server, &mensaje_cliente, sizeof(EnvioCliente)) == -1) {
