@@ -19,14 +19,13 @@ int abrir_pipe(const char* pathname, int flags)
   int abierto = 0, id_pipe;
   do {
     id_pipe = open(pathname, flags);
-    printf("abrir_pipe\n");
     if (id_pipe == -1) {
       perror(pathname);
-      printf(" Se volvera a intentar despues\n");
+      printf("Se volvera a intentar despues\n");
       sleep(5);
     } else
       abierto = 1;
-  } while (abierto != 1);
+  } while (abierto == 0);
   return id_pipe;
 }
 
@@ -253,10 +252,8 @@ int main (int argc, char **argv)
   }
 
   // Abre el pipe. No olviden validar todas las llmadas al sistema.
-  printf("salio de lectura %d %d\n", i, j);
   server = abrir_pipe(argv[4], O_RDONLY);
   // El otro proceso (nom1) le envia el nombre para el nuevo pipe y el pid.
-  printf("entra a whie\n");
   while (1)
   {
     if (read (server, &mensaje_cliente, sizeof(EnvioCliente)) == -1) {

@@ -113,7 +113,8 @@ void unfollow(EnvioCliente envioCliente, EnvioServer envioServer, int server, in
   }
 }
 
-void registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, int server){
+int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, int server){
+  int pipe_id;
   envioCliente.operacion = REGISTER;
   envioCliente.cliente = user;
   if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
@@ -121,19 +122,22 @@ void registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user,
     perror("En escritura");
     exit(1);
   }
-  if (read (server, &envioServer, sizeof(envioServer)) == -1) {
+  pipe_id = abrir_pipe(user.pipe_cliente, O_RDONLY);
+  if (read (pipe_id, &envioServer, sizeof(envioServer)) == -1) {
     perror("En lectura");
     exit(1);
   }
   switch(envioServer.respuesta){
     case EXITO:
-    printf("Registrado exitosamente.\n");
-    break;
+      printf("Registrado exitosamente.\n");
+      return pipe_id;
+      break;
     case INVALIDO:
-    printf("Registro no completado\nYa se encuentra registrado en el sistema.");
-    break;
+      printf("Registro no completado\nYa se encuentra registrado en el sistema.");
+      return -1;
+      break;
     default:
-    printf("Error desconocido\nContacte al desarrollador");
+      printf("Error desconocido\nContacte al desarrollador");
   }
 }
 
@@ -163,7 +167,7 @@ void desconexion(EnvioCliente envioCliente, EnvioServer envioServer, Cliente use
 
 int main (int argc, char **argv)
 {
-  int  server, desconexion = 0, opcion, id;
+  int  server, descon = 0, opcion, id;
   Tweet datos;
   EnvioCliente envioCliente;
   EnvioServer envioServer;
@@ -178,38 +182,30 @@ int main (int argc, char **argv)
 
   //signal(SIGUSR1, tweet_receive);
 
-  strcpy(user.pipe_cliente, argv[2]);
-  // Se crea el pipe del cliente
-  unlink(user.pipe_cliente);
-  if (mkfifo (user.pipe_cliente, fifo_mode) == -1) {
-    perror("pipe_cliente mkfifo");
-    exit(1);
-  }
   // Se abre el pipe cuyo nombre se recibe como argumento del main.
   server = abrir_pipe(argv[2], O_WRONLY);
 
+  // Se crea el pipe del cliente
   user.id = atoi(argv[1]);
   user.pid = getpid();
   strcpy(user.pipe_cliente, "cliente_");
   strcat(user.pipe_cliente, argv[1]+'\0');
 
+  unlink(user.pipe_cliente);
+  if (mkfifo (user.pipe_cliente, fifo_mode) == -1) {
+    perror("pipe_cliente mkfifo");
+    exit(1);
+  }
   // se envia el nombre del pipe al otro proceso.
-  registrar(envioCliente, envioServer, user, server);
-  // Se abre el segundo pipe
-  user.pipe_id = abrir_pipe(user.pipe_cliente, O_RDONLY);
-
+  user.pipe_id = registrar(envioCliente, envioServer, user, server);
+  printf("hola\n");
   do
   {
-    printf("Menu:\n\
-            1. Follow\
-            2. Unfollow\
-            3. Tweet\
-            4. Recuperar tweets\
-            5. Desconexion" );
+    printf("Menu:\n1. Follow\n2. Unfollow\n3. Tweet\n4. Recuperar tweets\n");
+    printf("5. Desconexion\n\nOpcion:");
     scanf("%d\n", &opcion);
     switch (opcion) {
       case 1:
-        //TODO Follow
         printf("Ingresar id del usuario a seguir: ");
         scanf("%d\n", &id);
         follow(envioCliente, envioServer, server, id);
@@ -240,6 +236,6 @@ int main (int argc, char **argv)
       default:
         printf("Opcion Invalida\nIntente de nuevo");
     }
-  } while(!desconexion);
+  } while(!descon);
   exit(0);
 }
