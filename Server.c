@@ -164,18 +164,25 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
             }
           }
         }
-      }
-      else
-      {
-        strcpy(archivo_tweet, "./tweet_pendientes/cliente_");
-        strcat(archivo_tweet, aux.id + ".dat\0");
-        file = fopen(archivo_tweet, "ab");
-        if(file == NULL)
-          printf("Error al abrir el archivo %s\n", archivo_tweet);
         else
         {
-          fwrite(&mensaje_server, sizeof(EnvioServer), 1, file);
-          kill(aux.pid, SIGUSR2);
+          strcpy(archivo_tweet, "./tweet_pendientes/cliente_");
+          strcat(archivo_tweet, aux.id + ".dat\0");
+          file = fopen(archivo_tweet, "ab");
+          if(file == NULL)
+            printf("Error al abrir el archivo %s\n", archivo_tweet);
+          else
+          {
+            if(fread(&num_tweets, sizeof(int), 1, file) == 0)
+              num_tweets = 0;
+            else
+              num_tweets++;
+            fwrite(&num_tweets, sizeof(int), 1, file);
+            fclose(file);
+            file = fopen(archivo_tweet, "ab");
+            fwrite(&mensaje_server, sizeof(EnvioServer), 1, file);
+            kill(aux.pid, SIGUSR2);
+          }
         }
       }
     }
