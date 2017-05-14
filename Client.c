@@ -61,6 +61,7 @@ void follow(EnvioCliente envioCliente, EnvioServer envioServer, int server, int 
   envioCliente.operacion = FOLLOW;
   envioCliente.cliente.pid = user.pid;
   envioCliente.cliente.id = id;
+  printf("Write\n");
   if(write(server, &envioCliente , sizeof(EnvioCliente)) == -1)
   {
     perror("En escritura");
@@ -70,6 +71,7 @@ void follow(EnvioCliente envioCliente, EnvioServer envioServer, int server, int 
     perror("En lectura");
     exit(1);
   }
+  printf("Leyo\n");
   switch(envioServer.respuesta){
     case EXITO:
       printf("Ahora sigue al usuario con id: %d\n", id);
@@ -89,6 +91,7 @@ void unfollow(EnvioCliente envioCliente, EnvioServer envioServer, int server, in
   envioCliente.operacion = UNFOLLOW;
   envioCliente.cliente.pid = user.pid;
   envioCliente.cliente.id = id;
+  printf("Write\n");
   if(write(server, &envioCliente , sizeof(EnvioCliente)) == -1)
   {
     perror("En escritura");
@@ -98,6 +101,7 @@ void unfollow(EnvioCliente envioCliente, EnvioServer envioServer, int server, in
     perror("En lectura");
     exit(1);
   }
+  printf("Leyo\n");
   switch(envioServer.respuesta){
     case EXITO:
       printf("Ahora no sigue al usuario con id: %d\n\n", id);
@@ -123,13 +127,13 @@ int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, 
     perror("En escritura");
     exit(1);
   }
-  printf("read\n");
+  printf("Abrir\n");
   pipe_id = abrir_pipe(user.pipe_cliente, O_RDONLY);
   if (read (pipe_id, &envioServer, sizeof(envioServer)) == -1) {
     perror("En lectura");
     exit(1);
   }
-  printf("salio\n");
+  printf("leyo\n");
   switch(envioServer.respuesta){
     case EXITO:
       printf("Registrado exitosamente.\n");
@@ -144,7 +148,7 @@ int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, 
   }
 }
 
-void desconexion(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, int server){
+int desconexion(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, int server){
   envioCliente.operacion = DESCONEXION;
   envioCliente.cliente = user;
   if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
@@ -152,19 +156,22 @@ void desconexion(EnvioCliente envioCliente, EnvioServer envioServer, Cliente use
     perror("En escritura");
     exit(1);
   }
-  if (read (server, &envioServer, sizeof(envioServer)) == -1) {
+  if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
     perror("En lectura");
     exit(1);
   }
   switch(envioServer.respuesta){
     case EXITO:
     printf("Desconectado exitosamente.\n");
+    return 1;
     break;
     case INVALIDO:
     printf("Registro no completado\n");
+    return 0;
     break;
     default:
     printf("Error desconocido\nContacte al desarrollador");
+    return 0;
   }
 }
 
@@ -233,7 +240,7 @@ int main (int argc, char **argv)
         break;
       case 5:
         //TODO Desconexion
-        desconexion(envioCliente, envioServer, user, server);
+        descon = desconexion(envioCliente, envioServer, user, server);
         break;
       default:
         printf("Opcion Invalida\nIntente de nuevo");

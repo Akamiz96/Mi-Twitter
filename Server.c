@@ -64,6 +64,8 @@ void registrar(int N, Cliente clientes[], EnvioCliente mensaje_cliente)
   printf("write\n");
   if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
     perror("En escritura");
+  else
+  printf("escribio\n");
 }
 
 void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
@@ -92,6 +94,8 @@ void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
     mensaje_server.respuesta = INVALIDO;
   if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
     perror("En escritura");
+  else
+  printf("Escribi\n");
 }
 
 void unfollow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
