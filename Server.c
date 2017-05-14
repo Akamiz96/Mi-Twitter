@@ -52,6 +52,7 @@ void registrar(int N, Cliente clientes[], EnvioCliente mensaje_cliente)
     if(clientes[aux.id - 1].id == -1)
     {
       clientes[aux.id - 1] = mensaje_cliente.cliente;
+      clientes[aux.id - 1].id = 1;
       clientes[aux.id - 1].pipe_id = abrir_pipe(aux.pipe_cliente, O_WRONLY);
       mensaje_server.respuesta = EXITO;
     }
@@ -60,6 +61,7 @@ void registrar(int N, Cliente clientes[], EnvioCliente mensaje_cliente)
   }
   else
     mensaje_server.respuesta = INVALIDO;
+  printf("write\n");
   if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
     perror("En escritura");
 }
@@ -256,6 +258,7 @@ int main (int argc, char **argv)
   // El otro proceso (nom1) le envia el nombre para el nuevo pipe y el pid.
   while (1)
   {
+    printf("read\n");
     if (read (server, &mensaje_cliente, sizeof(EnvioCliente)) == -1) {
       perror("En lectura");
       exit(1);
