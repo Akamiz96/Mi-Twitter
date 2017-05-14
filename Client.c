@@ -66,22 +66,22 @@ void follow(EnvioCliente envioCliente, EnvioServer envioServer, int server, int 
     perror("En escritura");
     exit(1);
   }
-  if (read (server, &envioServer, sizeof(EnvioServer)) == -1) {
+  if (read (user.pipe_id, &envioServer, sizeof(EnvioServer)) == -1) {
     perror("En lectura");
     exit(1);
   }
   switch(envioServer.respuesta){
     case EXITO:
-    printf("Ahora sigue al usuario con id: %d\n", id);
-    break;
+      printf("Ahora sigue al usuario con id: %d\n", id);
+      break;
     case FALLO:
-    printf("Ya se encuentra siguiendo al usuario con el id: %d\n", id);
-    break;
+      printf("Ya se encuentra siguiendo al usuario con el id: %d\n", id);
+      break;
     case INVALIDO:
-    printf("Id ingresado invalido\nSe ingreso el id: %d", id);
-    break;
+      printf("Id ingresado invalido\nSe ingreso el id: %d", id);
+      break;
     default:
-    printf("Error desconocido\nContacte al desarrollador");
+      printf("Error desconocido\nContacte al desarrollador");
   }
 }
 
@@ -94,22 +94,22 @@ void unfollow(EnvioCliente envioCliente, EnvioServer envioServer, int server, in
     perror("En escritura");
     exit(1);
   }
-  if (read (server, &envioServer, sizeof(EnvioServer)) == -1) {
+  if (read (user.pipe_id, &envioServer, sizeof(EnvioServer)) == -1) {
     perror("En lectura");
     exit(1);
   }
   switch(envioServer.respuesta){
     case EXITO:
-    printf("Ahora no sigue al usuario con id: %d\n", id);
-    break;
+      printf("Ahora no sigue al usuario con id: %d\n\n", id);
+      break;
     case FALLO:
-    printf("Ya no se encuentra siguiendo al usuario con el id: %d\n", id);
-    break;
+      printf("Ya no se encuentra siguiendo al usuario con el id: %d\n\n", id);
+      break;
     case INVALIDO:
-    printf("Id ingresado invalido\nSe ingreso el id: %d", id);
-    break;
+      printf("Id ingresado invalido\nSe ingreso el id: %d\n\n", id);
+      break;
     default:
-    printf("Error desconocido\nContacte al desarrollador");
+      printf("Error desconocido\nContacte al desarrollador");
   }
 }
 
@@ -117,16 +117,19 @@ int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, 
   int pipe_id;
   envioCliente.operacion = REGISTER;
   envioCliente.cliente = user;
+  printf("write\n");
   if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
   {
     perror("En escritura");
     exit(1);
   }
+  printf("read\n");
   pipe_id = abrir_pipe(user.pipe_cliente, O_RDONLY);
   if (read (pipe_id, &envioServer, sizeof(envioServer)) == -1) {
     perror("En lectura");
     exit(1);
   }
+  printf("salio\n");
   switch(envioServer.respuesta){
     case EXITO:
       printf("Registrado exitosamente.\n");
@@ -198,11 +201,10 @@ int main (int argc, char **argv)
   }
   // se envia el nombre del pipe al otro proceso.
   user.pipe_id = registrar(envioCliente, envioServer, user, server);
-  printf("hola\n");
   do
   {
     printf("Menu:\n1. Follow\n2. Unfollow\n3. Tweet\n4. Recuperar tweets\n");
-    printf("5. Desconexion\n\nOpcion:");
+    printf("5. Desconexion\n\nOpcion:\n");
     scanf("%d\n", &opcion);
     switch (opcion) {
       case 1:
