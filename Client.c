@@ -198,22 +198,21 @@ int main (int argc, char **argv)
   }
   // se envia el nombre del pipe al otro proceso.
   user.pipe_id = registrar(envioCliente, envioServer, user, server);
-  printf("hola\n");
   do
   {
     printf("Menu:\n1. Follow\n2. Unfollow\n3. Tweet\n4. Recuperar tweets\n");
     printf("5. Desconexion\n\nOpcion:");
-    scanf("%d\n", &opcion);
+    scanf("%d", &opcion);
     switch (opcion) {
       case 1:
         printf("Ingresar id del usuario a seguir: ");
-        scanf("%d\n", &id);
+        scanf("%d", &id);
         follow(envioCliente, envioServer, server, id);
         break;
       case 2:
         //TODO Unfollow
         printf("Ingresar id del usuario a no seguir mas: ");
-        scanf("%d\n", &id);
+        scanf("%d", &id);
         unfollow(envioCliente, envioServer, server, id);
         break;
       case 3:
