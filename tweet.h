@@ -5,10 +5,19 @@
 #define 				TAMUSR 	 	80
 #define 				LINE 			160
 
-
+/*
+	Definicion de una enumeracion para las funcionalidades presentadas para el usuario
+ */
 typedef enum {REGISTER, FOLLOW, UNFOLLOW, TWEET_C, RE_TWEETS, DESCONEXION} Operacion;
+
+/*
+	Definicion de una enumeracion para las respuestas del servidor
+ */
 typedef enum {EXITO, FALLO, TWEET, SINCRONO, ASINCRONO, INVALIDO} Respuesta;
 
+/*
+	Estructura de datos para la imagen BMP que puede ser enviada por los usuarios
+ */
 typedef struct BMP
 {
 	char bm[2];					//(2 Bytes) BM (Tipo de archivo)
@@ -29,30 +38,42 @@ typedef struct BMP
 	unsigned char pixel[TAM][TAM][NPIXEL]; 			//Puntero a una tabla dinamica de caracteres de 3 dimensiones para almacenar los pixeles
 }BMP;
 
+/*
+	Estructura de datos para la definicion de un Tweet
+ */
 typedef struct Tweet
 {
-	int id;
-  char texto[MAXCHAR];
-  BMP imagen;
+	int id; //id del cliente que envia el tweet
+  char texto[MAXCHAR]; //Espacio de caracteres para el texto del tweet
+  BMP imagen; //Espacio para la imagen que puede ser adicionada al tweet
 } Tweet;
 
+/*
+	Estructura de datos para la definicion de un Cliente
+ */
 typedef struct Cliente
 {
-	int id;
-	int pipe_id;
-	pid_t pid;
-	char pipe_cliente[MAXCHAR];
+	int id; //id del cliente dentro del sistema
+	int pipe_id; //pipe de comunicacion entre el servidor y el cliente
+	pid_t pid; //id dado por el Sistema Operativo al proceso que corre el cliente
+	char pipe_cliente[MAXCHAR]; //nombre del pipe de comunicacion entre el servidor y el cliente
 } Cliente;
 
+/*
+	Estructura de datos para ser enviada entre los clientes y el servidor
+ */
 typedef struct EnvioCliente
 {
-	Operacion operacion;
-	Tweet tweet;
-	Cliente cliente;
+	Operacion operacion; // operacion requerida por el usuario al servidor
+	Tweet tweet; // Tweet que puede haber enviado el cliente al servidor
+	Cliente cliente; // Informacion del cliente el cual requiere la solicitud o al cual se le envia la solicitud
 }EnvioCliente;
 
+/*
+	Estructura de datos para ser enviada entre el servidor y los clientes
+ */
 typedef struct EnvioServer
 {
-	Respuesta respuesta;
-	Tweet tweet;
+	Respuesta respuesta; // respuesta del servidor a la solicitud del cliente
+	Tweet tweet; // Envio posible de tweet
 }EnvioServer;

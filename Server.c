@@ -71,7 +71,7 @@ void registrar(int N, Cliente clientes[], EnvioCliente mensaje_cliente)
 void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
             EnvioCliente mensaje_cliente)
 {
-  int id_cliente;
+  int id_cliente, escribir;
   Cliente aux = (mensaje_cliente.cliente);
   EnvioServer mensaje_server;
   if(aux.id <= N && aux.id >= 1 )
@@ -92,10 +92,13 @@ void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
   }
   else
     mensaje_server.respuesta = INVALIDO;
-  if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
+  printf("\nESCRIBIendo\n");
+  escribir =write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer));
+  printf("\nESCRIBIII\n");
+  if(escribir == -1)
     perror("En escritura");
   else
-  printf("Escribi\n");
+    printf("\nEscribi\n");
 }
 
 void unfollow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
@@ -197,8 +200,23 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
     mensaje_server.respuesta = INVALIDO;
 }
 
+/*
+
+Main ejecutable del programa servidor
+Parametros para su ejecucion:
+  ->N: Numero de clientes que el sistema debe controlar
+      (No todos estan conectados al mismo tiempo)
+  ->Relaciones: Archivo donde se encuentran las relaciones
+      descritas entre los clientes
+  ->modo: sincrono o asincrono
+  ->pipeNom: nombre del pipe de comunicacion entre los clientes y el servidor
+*Los parametros deben ser insertado en este orden*
+
+ */
+
 int main (int argc, char **argv)
 {
+  //Declaracion de variables necesarias
   int server,  pid, N, cuantos, res, creado = 0;
   int grafo[TAMUSR][TAMUSR], i, j, line = LINE;
   Tweet datos;
@@ -209,29 +227,51 @@ int main (int argc, char **argv)
   EnvioServer mensaje_server;
   Respuesta modo;
 
+  //Definicion del tipo de lectura o escritura del pipe de comunicacion
   mode_t fifo_mode = S_IRUSR | S_IWUSR;
+
+  //Validacion de parametros del Main
   if(argc != 5)
   {
     printf("Error\nDebe ser ejecutado de la forma: %s N relaciones modo pipeNom\n",
            argv[0]);
     exit(1);
   }
+
+  //Validacion de la cantidad de clientes
   N = atoi(argv[1]);
   if(N < 1)
   {
     printf("Numero de clientes invalido debe ser mayor a 0\n");
     exit(1);
   }
+
+  /*
+    Inicializacion del arreglo para control de los distintos clientes
+    -1 -> No se encuentra conectado
+     1 -> Se encuentra conectado.
+    *Tipo del arreglo Cliente*
+  */
   for(i = 0; i < N; i++)
   {
     clientes[i].id = -1;
   }
+
+  //Apertura del archivo para lectura de las relaciones entre clientes
   file = fopen(argv[2], "r");
+
+  //Validacion de la apertura del archivo de relaciones
   if(file == NULL)
   {
     printf("Error al abrir el archivo %s\n", argv[2]);
     return 1;
   }
+
+  /*
+    Lectura del archivo de relaciones
+    Matriz de relaciones entre clientes
+    (id del cliente - 1 es la posicion de la matriz)
+   */
   for(i = 0; i < N; i++)
   {
     getline(&buffer, (size_t*)&line, file);
@@ -239,10 +279,15 @@ int main (int argc, char **argv)
       grafo[i][j] = (buffer[j * 2] == '1');
     }
   }
+
+  //Cerrar archivo de relaciones
   fclose ( file );
+
+  //Seleccion del modo de funcionamiento para el servidor
+  //Validacion de valores "sincrono" y "asincrono"
   if(strcasecmp(argv[3],"sincrono"))
     modo = SINCRONO;
-  else
+  else{
     if(strcasecmp(argv[3],"asincrono"))
       modo = ASINCRONO;
     else
@@ -250,30 +295,42 @@ int main (int argc, char **argv)
       printf("Modo invalido debe ser sincrono o asincrono\n");
       exit(1);
     }
+  }
+
   // Creacion del pipe inicial, el que se recibe como argumento del main
   unlink(argv[4]);
+  //Validacion de correcta creacion del pipe de comunicacion
   if (mkfifo (argv[4], fifo_mode) == -1) {
     perror("server mkfifo");
     exit(1);
   }
 
-  // Abre el pipe. No olviden validar todas las llmadas al sistema.
+  // Apertura del pipe de comunicacion
   server = abrir_pipe(argv[4], O_RDONLY);
-  // El otro proceso (nom1) le envia el nombre para el nuevo pipe y el pid.
+
+  //Ciclo infinito para la atencion de solicitudes de los clientes
   while (1)
   {
+
+    //Lectura de datos del pipe de comunicacion entre clientes y servidor
     printf("read\n");
     if (read (server, &mensaje_cliente, sizeof(EnvioCliente)) == -1) {
       perror("En lectura");
       exit(1);
     }
+    printf("lei\n");
+
+    //Validacion de la opcion correcta dependiendo del mensaje recibido por el servidor
     switch (mensaje_cliente.operacion) {
+      //Caso para el REGISTRO de un cliente
       case REGISTER:
         registrar(N, clientes, mensaje_cliente);
         break;
+      //Caso para FOLLOW
       case FOLLOW:
         follow(N, clientes, grafo, mensaje_cliente);
         break;
+      //Caso para UNFOLLOW
       case UNFOLLOW:
         unfollow(N, clientes, grafo, mensaje_cliente);
         break;
