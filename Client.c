@@ -17,20 +17,28 @@ Nota: todas las llamadas al sistema no estan validadas.
 typedef void (*sighandler_t)(int);
 
 Cliente user;
-Tweet datos;
+EnvioServer datos;
 unsigned int tweets_leer = 1;
+unsigned int tweets_imagen = 1;
+
+void CrearImagen(BMP *imagen, char ruta[]);
 
 sighandler_t tweet_receive(void)
 {
+  char nombre_imagen[LINE], strNum[TAMUSR];
   // Se lee un mensaje por el segundo pipe.
   if(read(user.pipe_id, &datos, sizeof(Tweet) == -1))
   {
    perror("En lectura");
    exit(1);
   }
-  printf("Tweet enviado por: %d\n %s\n", datos.id , datos.texto);
-  if(datos.conImagen == 1){
-    printf("Tweet envviado contiene una imagen\n");
+  printf("Tweet enviado por: %d\n %s\n", datos.tweet.id , datos.tweet.texto);
+  if(datos.tweet.conImagen == 1){
+    printf("Tweet enviado contiene una imagen\n");
+    strcpy(nombre_imagen,"imagen");
+    sprintf(strNum,"%d%d_%d",tweets_imagen,user.id,datos.tweet.id);
+    strcat(nombre_imagen,strNum);
+    CrearImagen(&datos.tweet.imagen,nombre_imagen);
   }
 }
 
@@ -375,7 +383,7 @@ void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioS
     if(envioServer.respuesta == TWEET){
       tweetLeido++;
       printf("Tweet enviado por: %d\n %s", envioServer.tweet.id , envioServer.tweet.texto);
-      if(datos.conImagen == 1){
+      if(envioServer.tweet.conImagen == 1){
         printf("Tweet enviado contiene una imagen\n");
       }
     }
@@ -389,9 +397,18 @@ void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioS
   }
 }
 
+//****************************************************************************************************************************************************
+//Función para que un usuario envie un tweet con o sin imagen y texto
+//Parametros de entrada: user-> informacion del usuario que va a enviar el tweet
+//                       server-> identificador del pipe por medio del cual sse envian datos al servidor
+//                       envioCliente-> variable para almacenar datos del envio del cliente al servidor
+//                       envioServer-> variable para recibir los datos que se envian desde el servidor
+//Parametro que devuelve: Ninguno
+//****************************************************************************************************************************************************
 void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServer envioServer){
   char imagenC, textoC;
-  char ruta[TAM];
+  char ruta[TAM], strNum[TAMUSR];
+  char nombre_imagen[LINE];
   BMP * img = NULL;
   printf("Desea enviar una imagen: \n");
   printf("Ingrese 'S' o 's' de ser caso afirmativo.\nIngrese 'N' o 'n' de ser caso negativo.\n");
@@ -401,8 +418,9 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
     printf("Digite la ruta de la imagen a enviar: \n");
     scanf("%s", ruta);
     AbrirImagen(img,ruta);
-    if(img != NULL)
+    if(img != NULL){
       envioCliente.tweet.imagen = *img;
+    }
   }
   else{
     if(strcasecmp(&imagenC,"N") == 0){
@@ -439,8 +457,12 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
   }
   if(envioServer.respuesta == EXITO){
     printf("Tweet enviado por: %d\n %s", envioServer.tweet.id , envioServer.tweet.texto);
-    if(datos.conImagen == 1){
+    if(envioServer.tweet.conImagen == 1){
       printf("Tweet enviado contiene una imagen\n");
+      strcpy(nombre_imagen,"imagen");
+      sprintf(strNum,"%d%d_%d",tweets_imagen,user.id,envioServer.tweet.id);
+      strcat(nombre_imagen,strNum);
+      CrearImagen(&envioServer.tweet.imagen,nombre_imagen);
     }
   }
 }
@@ -458,7 +480,6 @@ int main (int argc, char **argv)
 {
   //Declaracion de variable necesarias
   int  server, descon = 0, opcion, id;
-  Tweet datos;
   EnvioCliente envioCliente;
   EnvioServer envioServer;
 
