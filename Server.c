@@ -154,9 +154,7 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
             if(write(clientes[i].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
               perror("En escritura");
             else
-            {
               kill(aux.pid, SIGUSR1);
-            }
           else
           {
             strcpy(archivo_tweet, "./tweet_pendientes/cliente_");
@@ -170,6 +168,7 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
                 num_tweets = 0;
               else
                 num_tweets++;
+              frwind(file);
               fwrite(&num_tweets, sizeof(int), 1, file);
               fclose(file);
               file = fopen(archivo_tweet, "ab");
@@ -181,7 +180,7 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
         {
           strcpy(archivo_tweet, "./tweet_pendientes/cliente_");
           strcat(archivo_tweet, aux.id + ".dat\0");
-          file = fopen(archivo_tweet, "ab");
+          file = fopen(archivo_tweet, "+rb");
           if(file == NULL)
             printf("Error al abrir el archivo %s\n", archivo_tweet);
           else
@@ -190,6 +189,7 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
               num_tweets = 0;
             else
               num_tweets++;
+            frwind(file);
             fwrite(&num_tweets, sizeof(int), 1, file);
             fclose(file);
             file = fopen(archivo_tweet, "ab");
@@ -359,9 +359,10 @@ int main (int argc, char **argv)
         break;
       case TWEET_C:
         //TODO realizar un tweet
+        tweet(N, Cliente clientes[], grafo[TAMUSR][TAMUSR], modo, mensaje_cliente);
         break;
       case RE_TWEETS:
-        //TODO recuperar tweet
+        //TODO recuperar tweets
         break;
       case DESCONEXION:
         //TODO Desconexion
