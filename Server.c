@@ -138,7 +138,7 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
   Cliente aux = (mensaje_cliente.cliente);
   EnvioServer mensaje_server;
   FILE* file;
-  char archivo_tweet[MAXCHAR];
+  char archivo_tweet[LINE];
 
   if(aux.id <= N && aux.id >= 1 )
   {
@@ -219,6 +219,23 @@ void desconexion(Cliente clientes[], EnvioCliente mensaje_cliente)
   else
   {
     perror("En escritura");
+  }
+}
+
+void verificarTweetsPendientes(Cliente user){
+  char archivo_tweet[LINE];
+  int num_tweets;
+  EnvioServer mensaje_server;
+  strcpy(archivo_tweet, "./tweet_pendientes/cliente_");
+  strcat(archivo_tweet, user.id + ".dat\0");
+  FILE* file;
+  file = fopen(archivo_tweet, "+rb");
+  if(file != NULL){
+    if(fread(&num_tweets, sizeof(int), 1, file) == 0)
+      num_tweets = 0;
+    for(int i = 0; i < num_tweets; i++){
+      fread(&mensaje_server, sizeof(EnvioServer), 1, file);
+    }
   }
 }
 
