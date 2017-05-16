@@ -167,7 +167,14 @@ void CrearImagen(BMP *imagen, char ruta[])
 	fclose(archivo);
 }
 
-
+//****************************************************************************************************************************************************
+//Función para la apertura del pipe segun los flags ingresados
+//Parametros de entrada: pathname-> nombre que tendra el pipe,
+//                       flags-> modificadores con los cuales se abrira el pipe
+//Parametro que devuelve: entero indicando si el pipe fue abierto correctamente
+//                        Si se abre correctamente-> id del pipe
+//                        De lo contrario-> -1
+//****************************************************************************************************************************************************
 int abrir_pipe(const char* pathname, int flags)
 {
   int abierto = 0, id_pipe;
@@ -183,6 +190,14 @@ int abrir_pipe(const char* pathname, int flags)
   return id_pipe;
 }
 
+//****************************************************************************************************************************************************
+//Función para que un usuario pueda empezar a seguir a otro.
+//Parametros de entrada: envioCliente-> variable para almacenar datos del envio del cliente al servidor
+//                       envioServer-> variable para recibir los datos que se envian desde el servidor
+//                       server-> identificador del pipe por medio del cual sse envian datos al servidor
+//                       id-> identificador del usuario al cual se desea empezar a seguir
+//Parametro que devuelve: Ninguno
+//****************************************************************************************************************************************************
 void follow(EnvioCliente envioCliente, EnvioServer envioServer, int server, int id){
   int leer = -1;
   if(user.id == id){
@@ -222,6 +237,14 @@ void follow(EnvioCliente envioCliente, EnvioServer envioServer, int server, int 
     }
 }
 
+//****************************************************************************************************************************************************
+//Función para que un usuario deje de seguir a otro.
+//Parametros de entrada: envioCliente-> variable para almacenar datos del envio del cliente al servidor
+//                       envioServer-> variable para recibir los datos que se envian desde el servidor
+//                       server-> identificador del pipe por medio del cual sse envian datos al servidor
+//                       id-> identificador del usuario al cual se desea empezar a seguir
+//Parametro que devuelve: Ninguno
+//****************************************************************************************************************************************************
 void unfollow(EnvioCliente envioCliente, EnvioServer envioServer, int server, int id){
   if(user.id == id){
     printf("El id es el mismo con el cual se encuentra conectado\n");
@@ -257,6 +280,15 @@ void unfollow(EnvioCliente envioCliente, EnvioServer envioServer, int server, in
   }
 }
 
+//****************************************************************************************************************************************************
+//Función para que un usuario se registre con el servidor
+//Parametros de entrada: envioCliente-> variable para almacenar datos del envio del cliente al servidor
+//                       envioServer-> variable para recibir los datos que se envian desde el servidor
+//                       server-> identificador del pipe por medio del cual sse envian datos al servidor
+//                       user-> Datos correspondientes al cliente que se desea registrar en el sistema
+//Parametro que devuelve: el identificador del pipe en caso de que el registro sea exitoso
+//                        -1 en caso contrario
+//****************************************************************************************************************************************************
 int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, int server){
   int pipe_id, leer;
   envioCliente.operacion = REGISTER;
@@ -289,6 +321,15 @@ int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, 
   }
 }
 
+//****************************************************************************************************************************************************
+//Función para que un usuario se pueda desconectar del servidor
+//Parametros de entrada: envioCliente-> variable para almacenar datos del envio del cliente al servidor
+//                       envioServer-> variable para recibir los datos que se envian desde el servidor
+//                       server-> identificador del pipe por medio del cual sse envian datos al servidor
+//                       cliente-> datos del cliente a desconectar del servidor
+//Parametro que devuelve: 1 en caso de que la desconexion sea correcta
+//                        0 en caso de que la desconexion sea incorrecta
+//****************************************************************************************************************************************************
 int desconexion(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, int server){
   envioCliente.operacion = DESCONEXION;
   envioCliente.cliente = user;

@@ -45,6 +45,7 @@ typedef struct Tweet
 {
 	int id; //id del cliente que envia el tweet
   char texto[MAXCHAR]; //Espacio de caracteres para el texto del tweet
+	int conImagen; //Entero para identificar si el tweet tiene imagen incluida
   BMP imagen; //Espacio para la imagen que puede ser adicionada al tweet
 } Tweet;
 
