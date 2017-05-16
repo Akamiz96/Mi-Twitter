@@ -419,7 +419,7 @@ int main (int argc, char **argv)
     {
       //Impresion del menu para el cliente
       printf("Menu:\n1. Follow\n2. Unfollow\n3. Tweet\n4. Recuperar tweets\n");
-      printf("5. Desconexion\n\nOpcion:");
+      printf("5. Desconexion\n\n> ");
       //Lectura de la opcion del cliente
       scanf("%d", &opcion);
       //Eleccion de la funcionalidad segun la eleccion del cliente
