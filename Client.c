@@ -89,17 +89,6 @@ void AbrirImagen(BMP *imagen, char *ruta)
 		printf ("La imagen debe ser de 24 bits.\n");
 	}
 
-	//Reservar memoria para la matriz de pixels
-	imagen->pixel=malloc (imagen->alto* sizeof(char *));
-	for( i=0; i<imagen->alto; i++){
-		imagen->pixel[i]=malloc (imagen->ancho* sizeof(char*));
-
-	}
-    for( i=0; i<imagen->alto; i++){
-        for( j=0; j<imagen->ancho; j++)
-            imagen->pixel[i][j]=malloc(3*sizeof(char));
-	}
-
 	//Pasar la imágen a el arreglo reservado en escala de grises
 	//unsigned char R,B,G;
 	for (i=0;i<imagen->alto;i++)
@@ -385,7 +374,9 @@ int main (int argc, char **argv)
     exit(1);
   }
   //Instalador del manejador de la senal SIGUSR1
-  //signal(SIGUSR1, tweet_receive);
+  signal(SIGUSR1, (sighandler_t)tweet_receive);
+  //Instalador del manejador de la senal SIGUSR2
+  signal(SIGUSR2, (sighandler_t)tweets);
 
   // Se abre el pipe cuyo nombre se recibe como argumento del main.
   server = abrir_pipe(argv[2], O_WRONLY);
@@ -400,7 +391,7 @@ int main (int argc, char **argv)
   strcat(user.pipe_cliente, argv[1]+'\0');
   //Validacion de correcta creacion del pipe de comunicacion
   if (mkfifo (user.pipe_cliente, fifo_mode) == -1) {
-    perror("pipe_cliente mkfifo");
+    perror("Cliente ya creado");
     exit(1);
   }
 
