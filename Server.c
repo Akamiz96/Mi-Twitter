@@ -40,6 +40,7 @@ int buscar_cliente_pid(int N, Cliente clientes[], pid_t pid_cliente)
       id = clientes[i].id;
     }
   }
+  printf("id encontrado: %d\n", id);
   return id;
 }
 
@@ -52,7 +53,7 @@ void registrar(int N, Cliente clientes[], EnvioCliente mensaje_cliente)
     if(clientes[aux.id - 1].id == -1)
     {
       clientes[aux.id - 1] = mensaje_cliente.cliente;
-      clientes[aux.id - 1].id = 1;
+      clientes[aux.id - 1].id = aux.id;
       clientes[aux.id - 1].pipe_id = abrir_pipe(aux.pipe_cliente, O_WRONLY);
       mensaje_server.respuesta = EXITO;
     }
@@ -61,11 +62,11 @@ void registrar(int N, Cliente clientes[], EnvioCliente mensaje_cliente)
   }
   else
     mensaje_server.respuesta = INVALIDO;
-  printf("write\n");
+  printf("write %d %s\n", clientes[aux.id - 1].pipe_id, aux.pipe_cliente);
   if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
     perror("En escritura");
   else
-  printf("escribio\n");
+    printf("escribio\n");
 }
 
 void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
@@ -79,7 +80,7 @@ void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
     id_cliente = buscar_cliente_pid(N, clientes, aux.pid);
     if(id_cliente != -1)
     {
-      if(grafo[id_cliente][aux.id] == 0)
+      if(grafo[id_cliente - 1][aux.id - 1] == 0)
       {
         grafo[id_cliente - 1][aux.id - 1] = 1;
         mensaje_server.respuesta = EXITO;
@@ -93,7 +94,7 @@ void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
   else
     mensaje_server.respuesta = INVALIDO;
   printf("\nESCRIBIendo\n");
-  printf("%d %d %s\n", id_cliente, clientes[id_cliente].pipe_id, clientes[id_cliente].pipe_cliente);
+  printf("%d %d %s\n", id_cliente - 1, clientes[id_cliente].pipe_id, clientes[id_cliente].pipe_cliente);
   escribir = write(clientes[id_cliente - 1].pipe_id, &mensaje_server, sizeof(EnvioServer));
   printf("\nESCRIBIII\n");
   if(escribir == -1)
@@ -199,6 +200,26 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
   }
   else
     mensaje_server.respuesta = INVALIDO;
+}
+
+void desconexion(Cliente clientes[], EnvioCliente mensaje_cliente)
+{
+  Cliente aux = (mensaje_cliente.cliente);
+  EnvioServer mensaje_server;
+  int escribio;
+  clientes[aux.id - 1].id = -1;
+  mensaje_server.respuesta = EXITO;
+  printf("write %d %s\n", clientes[aux.id - 1].pipe_id, aux.pipe_cliente);
+  if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) != -1)
+  {
+    printf("hola\n");
+    close(clientes[aux.id - 1].pipe_id);
+    //sleep(30);
+  }
+  else
+  {
+    perror("En escritura");
+  }
 }
 
 /*
@@ -343,6 +364,8 @@ int main (int argc, char **argv)
         break;
       case DESCONEXION:
         //TODO Desconexion
+        desconexion(clientes, mensaje_cliente);
+        break;
     }
     //TODO mandar señal
   }

@@ -177,6 +177,7 @@ int desconexion(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user
   }
   switch(envioServer.respuesta){
     case EXITO:
+    unlink(user.pipe_cliente);
     printf("Desconectado exitosamente.\n");
     return 1;
     break;
@@ -228,8 +229,6 @@ int main (int argc, char **argv)
   user.pid = getpid();
   strcpy(user.pipe_cliente, "cliente_");
   strcat(user.pipe_cliente, argv[1]+'\0');
-
-  unlink(user.pipe_cliente);
   //Validacion de correcta creacion del pipe de comunicacion
   if (mkfifo (user.pipe_cliente, fifo_mode) == -1) {
     perror("pipe_cliente mkfifo");
