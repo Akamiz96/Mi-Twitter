@@ -17,6 +17,7 @@ Nota: todas las llamadas al sistema no estan validadas.
 int abrir_pipe(const char* pathname, int flags)
 {
   int abierto = 0, id_pipe;
+
   do {
     id_pipe = open(pathname, flags);
     if (id_pipe == -1) {
@@ -32,6 +33,7 @@ int abrir_pipe(const char* pathname, int flags)
 int buscar_cliente_pid(int N, Cliente clientes[], pid_t pid_cliente)
 {
   int i, encontrado = 0, id = -1;
+
   for (i = 0; (i < N) && (!encontrado); i++)
   {
     if(clientes[i].pid == pid_cliente)
@@ -44,10 +46,14 @@ int buscar_cliente_pid(int N, Cliente clientes[], pid_t pid_cliente)
   return id;
 }
 
-void registrar(int N, Cliente clientes[], EnvioCliente mensaje_cliente)
+void registrar(int N, Cliente clientes[], Respuesta modo, EnvioCliente mensaje_cliente)
 {
+  char archivo_tweet[LINE];
+  int num_tweets, i;
+  FILE* file;
   Cliente aux = (mensaje_cliente.cliente);
   EnvioServer mensaje_server;
+
   if(aux.id <= N && aux.id >= 1 )
   {
     if(clientes[aux.id - 1].id == -1)
@@ -67,6 +73,23 @@ void registrar(int N, Cliente clientes[], EnvioCliente mensaje_cliente)
     perror("En escritura");
   else
     printf("escribio\n");
+  if(modo == ASINCRONO)
+  {
+    strcpy(archivo_tweet, "./tweet_pendientes/cliente_");
+    strcat(archivo_tweet, aux.id + ".dat\0");
+    file = fopen(archivo_tweet, "rb");
+    if(file != NULL);
+    {
+      while (!feof(file))
+      {
+        fread(&mensaje_server, sizeof(EnvioServer), 1, file);
+        if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
+          perror("En escritura");
+        else
+          kill(aux.pid, SIGUSR1);
+      }
+    }
+  }
 }
 
 void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
@@ -75,6 +98,7 @@ void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
   int id_cliente, escribir;
   Cliente aux = (mensaje_cliente.cliente);
   EnvioServer mensaje_server;
+
   if(aux.id <= N && aux.id >= 1 )
   {
     id_cliente = buscar_cliente_pid(N, clientes, aux.pid);
@@ -109,6 +133,7 @@ void unfollow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
   int id_cliente;
   Cliente aux = (mensaje_cliente.cliente);
   EnvioServer mensaje_server;
+
   if(aux.id <= N && aux.id >= 1 )
   {
     id_cliente = buscar_cliente_pid(N, clientes, aux.pid);
@@ -161,18 +186,22 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
             strcat(archivo_tweet, aux.id + ".dat\0");
             file = fopen(archivo_tweet, "+rb");
             if(file == NULL)
-              printf("Error al abrir el archivo %s\n", archivo_tweet);
+            {
+              file = fopen(archivo_tweet, "wb");
+              num_tweets = 1;
+              fwrite(&num_tweets, sizeof(int), 1, file);
+              fwrite(&mensaje_server, sizeof(EnvioServer), 1, file);
+            }
             else
             {
-              if(fread(&num_tweets, sizeof(int), 1, file) == 0)
-                num_tweets = 0;
-              else
+              if(fread(&num_tweets, sizeof(int), 1, file) != 0)
                 num_tweets++;
-              frwind(file);
+              rewind(file);
               fwrite(&num_tweets, sizeof(int), 1, file);
               fclose(file);
               file = fopen(archivo_tweet, "ab");
               fwrite(&mensaje_server, sizeof(EnvioServer), 1, file);
+              fclose(file);
             }
           }
         }
@@ -182,18 +211,22 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
           strcat(archivo_tweet, aux.id + ".dat\0");
           file = fopen(archivo_tweet, "+rb");
           if(file == NULL)
-            printf("Error al abrir el archivo %s\n", archivo_tweet);
+          {
+            file = fopen(archivo_tweet, "wb");
+            num_tweets = 1;
+            fwrite(&num_tweets, sizeof(int), 1, file);
+            fwrite(&mensaje_server, sizeof(EnvioServer), 1, file);
+          }
           else
           {
-            if(fread(&num_tweets, sizeof(int), 1, file) == 0)
-              num_tweets = 0;
-            else
+            if(fread(&num_tweets, sizeof(int), 1, file) != 0)
               num_tweets++;
-            frwind(file);
+            rewind(file);
             fwrite(&num_tweets, sizeof(int), 1, file);
             fclose(file);
             file = fopen(archivo_tweet, "ab");
             fwrite(&mensaje_server, sizeof(EnvioServer), 1, file);
+            fclose(file);
             if(clientes[i].id != -1 )
               kill(aux.pid, SIGUSR2);
           }
@@ -205,11 +238,36 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
     mensaje_server.respuesta = INVALIDO;
 }
 
+void recuperar_tweets(Cliente clientes[],
+           EnvioCliente mensaje_cliente)
+{
+  char archivo_tweet[LINE];
+  FILE* file;
+  Cliente aux = (mensaje_cliente.cliente);
+  EnvioServer mensaje_server;
+
+  strcpy(archivo_tweet, "./tweet_pendientes/cliente_");
+  strcat(archivo_tweet, aux.id + ".dat\0");
+  file = fopen(archivo_tweet, "rb");
+  if(file != NULL);
+  {
+    while (!feof(file))
+    {
+      fread(&mensaje_server, sizeof(EnvioServer), 1, file);
+      if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
+        perror("En escritura");
+      else
+        kill(aux.pid, SIGUSR1);
+    }
+  }
+}
+
 void desconexion(Cliente clientes[], EnvioCliente mensaje_cliente)
 {
   Cliente aux = (mensaje_cliente.cliente);
   EnvioServer mensaje_server;
   int escribio;
+
   clientes[aux.id - 1].id = -1;
   mensaje_server.respuesta = EXITO;
   printf("write %d %s\n", clientes[aux.id - 1].pipe_id, aux.pipe_cliente);
@@ -220,23 +278,6 @@ void desconexion(Cliente clientes[], EnvioCliente mensaje_cliente)
   }
   else
     perror("En escritura");
-}
-
-void verificarTweetsPendientes(Cliente user){
-  char archivo_tweet[LINE];
-  int num_tweets;
-  EnvioServer mensaje_server;
-  strcpy(archivo_tweet, "./tweet_pendientes/cliente_");
-  strcat(archivo_tweet, user.id + ".dat\0");
-  FILE* file;
-  file = fopen(archivo_tweet, "+rb");
-  if(file != NULL){
-    if(fread(&num_tweets, sizeof(int), 1, file) == 0)
-      num_tweets = 0;
-    for(int i = 0; i < num_tweets; i++){
-      fread(&mensaje_server, sizeof(EnvioServer), 1, file);
-    }
-  }
 }
 
 /*
@@ -364,7 +405,7 @@ int main (int argc, char **argv)
     switch (mensaje_cliente.operacion) {
       //Caso para el REGISTRO de un cliente
       case REGISTER:
-        registrar(N, clientes, mensaje_cliente);
+        registrar(N, clientes, modo, mensaje_cliente);
         break;
       //Caso para FOLLOW
       case FOLLOW:
@@ -376,7 +417,7 @@ int main (int argc, char **argv)
         break;
       case TWEET_C:
         //TODO realizar un tweet
-        tweet(N, Cliente clientes[], grafo[TAMUSR][TAMUSR], modo, mensaje_cliente);
+        tweet(N, clientes, grafo, modo, mensaje_cliente);
         break;
       case RE_TWEETS:
         //TODO recuperar tweets
