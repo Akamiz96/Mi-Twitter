@@ -347,6 +347,7 @@ int desconexion(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user
   }
 }
 
+
 /*
 /*********************************************************************************************************
 //PROGRAMA PRINCIPAL
@@ -404,7 +405,6 @@ int main (int argc, char **argv)
 
   //Validacion de registro exitoso del cliente en el servidor
   if(user.pipe_id != -1){
-
     //Ciclo de control de opciones sobre el cliente
     do
     {
