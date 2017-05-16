@@ -18,7 +18,7 @@ typedef void (*sighandler_t)(int);
 
 Cliente user;
 Tweet datos;
-int tweets_leer = 0;
+unsigned int tweets_leer = 0;
 
 sighandler_t tweet_receive(void)
 {
@@ -28,7 +28,10 @@ sighandler_t tweet_receive(void)
    perror("En lectura");
    exit(1);
   }
-  printf("Tweet enviado por: %d\n %s", datos.id , datos.texto);
+  printf("Tweet enviado por: %d\n %s\n", datos.id , datos.texto);
+  if(datos.conImagen == 1){
+    printf("Tweet envviado contiene una imagen\n");
+  }
 }
 
 sighandler_t tweets(void)
@@ -347,6 +350,50 @@ int desconexion(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user
   }
 }
 
+//****************************************************************************************************************************************************
+//Función para que un usuario se pueda desconectar del servidor
+//Parametros de entrada: cliente-> datos del cliente a desconectar del servidor
+//                       server-> identificador del pipe por medio del cual sse envian datos al servidor
+//                       envioCliente-> variable para almacenar datos del envio del cliente al servidor
+//                       envioServer-> variable para recibir los datos que se envian desde el servidor
+//Parametro que devuelve: Ninguno
+//****************************************************************************************************************************************************
+void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioServer envioServer){
+  if(tweets_leer == 0)
+    printf("No hay nuevos tweets.");
+  else{
+    envioCliente.operacion = RE_TWEETS;
+    envioCliente.cliente = user;
+    if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
+    {
+      perror("En escritura");
+      exit(1);
+    }
+    while(tweets_leer > 0){
+      if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
+        perror("En lectura");
+        exit(1);
+      }
+      if(envioServer.respuesta == TWEET){
+        printf("Tweet enviado por: %d\n %s", envioServer.tweet.id , envioServer.tweet.texto);
+        if(datos.conImagen == 1){
+          printf("Tweet envviado contiene una imagen\n");
+        }
+      }
+      tweets_leer--;
+    }
+  }
+}
+
+void enviarTweet(Cliente user, int server, EnvioCliente envioCliente){
+  printf("Desea enviar una imagen: \n");
+  //scanf("%d\n", &id);
+  printf("Escriba el tweet a enviar: \n");
+  //scanf("%d\n", &id);
+  //if(imagen == "s" || imagen == "S")
+  printf("Digite la ruta de la imagen a enviar: \n");
+  //scanf("%d\n", &id);
+}
 
 /*
 /*********************************************************************************************************
@@ -374,9 +421,9 @@ int main (int argc, char **argv)
     printf("Error\nDebe ser ejecutado de la forma: %s ID pipe_server \n",argv[0]);
     exit(1);
   }
-  //Instalador del manejador de la senal SIGUSR1
+  //Instalador del manejador de la senal SIGUSR1 (ASINCRONO)
   signal(SIGUSR1, (sighandler_t)tweet_receive);
-  //Instalador del manejador de la senal SIGUSR2
+  //Instalador del manejador de la senal SIGUSR2 (SINCRONO)
   signal(SIGUSR2, (sighandler_t)tweets);
 
   // Se abre el pipe cuyo nombre se recibe como argumento del main.
@@ -430,16 +477,11 @@ int main (int argc, char **argv)
           break;
         case 3:
           //TODO Tweet
-          printf("Desea enviar una imagen: \n");
-          //scanf("%d\n", &id);
-          printf("Escriba el tweet a enviar: \n");
-          //scanf("%d\n", &id);
-          //if(imagen == "s" || imagen == "S")
-          printf("Digite la ruta de la imagen a enviar: \n");
-          //scanf("%d\n", &id);
+          enviarTweet(user, server, envioCliente);
           break;
         case 4:
           //TODO Recuperar
+          recuperarTweets(user, server, envioCliente, envioServer);
           break;
         //Caso para la desconexion del cliente respecto al servidor
         case 5:
