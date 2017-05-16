@@ -14,35 +14,54 @@ Nota: todas las llamadas al sistema no estan validadas.
 #include <string.h>
 #include "tweet.h"
 
+//*****************************************************************
+//DECLARACIÓN DE TYPEDEF PARA EL MANEJO DE SENALES
+//*****************************************************************
 typedef void (*sighandler_t)(int);
 
+//*****************************************************************
+//DECLARACIÓN DE VARIABLES PARA EL MANEJO DE SENALES
+//*****************************************************************
 Cliente user;
-Tweet datos;
-unsigned int tweets_leer = 0;
+EnvioServer datos;
+unsigned int tweets_leer = 1;
+unsigned int tweets_imagen = 1;
+
+//*****************************************************************
+//DECLARACIÓN DE FUNCIONES
+//*****************************************************************
+void CrearImagen(BMP *imagen, char ruta[]);
+void AbrirImagen(BMP *imagen, char *ruta);
+int abrir_pipe(const char* pathname, int flags);
+void follow(EnvioCliente envioCliente, EnvioServer envioServer, int server, int id);
+void unfollow(EnvioCliente envioCliente, EnvioServer envioServer, int server, int id);
+int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, int server);
+int desconexion(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, int server);
+void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioServer envioServer);
+void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServer envioServer);
 
 sighandler_t tweet_receive(void)
 {
+  char nombre_imagen[LINE], strNum[TAMUSR];
   // Se lee un mensaje por el segundo pipe.
   if(read(user.pipe_id, &datos, sizeof(Tweet) == -1))
   {
    perror("En lectura");
    exit(1);
   }
-  printf("Tweet enviado por: %d\n %s\n", datos.id , datos.texto);
-  if(datos.conImagen == 1){
-    printf("Tweet envviado contiene una imagen\n");
+  printf("Tweet enviado por: %d\n %s\n", datos.tweet.id , datos.tweet.texto);
+  if(datos.tweet.conImagen == 1){
+    printf("Tweet enviado contiene una imagen\n");
+    strcpy(nombre_imagen,"imagen");
+    sprintf(strNum,"%d%d_%d",tweets_imagen,user.id,datos.tweet.id);
+    strcat(nombre_imagen,strNum);
+    CrearImagen(&datos.tweet.imagen,nombre_imagen);
   }
 }
 
 sighandler_t tweets(void)
 {
-  // Se lee un mensaje por el segundo pipe.
-  if(read(user.pipe_id, &datos, sizeof(Tweet) == -1))
-  {
-   perror("En lectura");
-   exit(1);
-  }
-  tweets_leer++;
+  tweets_leer = 0;
 }
 
 //*************************************************************************************************************************************************
@@ -63,48 +82,54 @@ void AbrirImagen(BMP *imagen, char *ruta)
 		//Si la imágen no se encuentra en la ruta dada
 		printf( "La imágen %s no fue encontrada\n",ruta);
 	}
+  else{
+  	//Leer la cabecera de la imagen y almacenarla en la estructura a la que apunta imagen
+  	fseek( archivo,0, SEEK_SET);
+  	fread(&imagen->bm,sizeof(char),2, archivo);
+  	fread(&imagen->tamano,sizeof(int),1, archivo);
+  	fread(&imagen->reservado,sizeof(int),1, archivo);
+  	fread(&imagen->offset,sizeof(int),1, archivo);
+  	fread(&imagen->tamanoMetadatos,sizeof(int),1, archivo);
+  	fread(&imagen->alto,sizeof(int),1, archivo);
+  	fread(&imagen->ancho,sizeof(int),1, archivo);
+  	fread(&imagen->numeroPlanos,sizeof(short int),1, archivo);
+  	fread(&imagen->profundidadColor,sizeof(short int),1, archivo);
+  	fread(&imagen->tipoCompresion,sizeof(int),1, archivo);
+  	fread(&imagen->tamanoEstructura,sizeof(int),1, archivo);
+  	fread(&imagen->pxmh,sizeof(int),1, archivo);
+  	fread(&imagen->pxmv,sizeof(int),1, archivo);
+  	fread(&imagen->coloresUsados,sizeof(int),1, archivo);
+  	fread(&imagen->coloresImportantes,sizeof(int),1, archivo);
 
-	//Leer la cabecera de la imagen y almacenarla en la estructura a la que apunta imagen
-	fseek( archivo,0, SEEK_SET);
-	fread(&imagen->bm,sizeof(char),2, archivo);
-	fread(&imagen->tamano,sizeof(int),1, archivo);
-	fread(&imagen->reservado,sizeof(int),1, archivo);
-	fread(&imagen->offset,sizeof(int),1, archivo);
-	fread(&imagen->tamanoMetadatos,sizeof(int),1, archivo);
-	fread(&imagen->alto,sizeof(int),1, archivo);
-	fread(&imagen->ancho,sizeof(int),1, archivo);
-	fread(&imagen->numeroPlanos,sizeof(short int),1, archivo);
-	fread(&imagen->profundidadColor,sizeof(short int),1, archivo);
-	fread(&imagen->tipoCompresion,sizeof(int),1, archivo);
-	fread(&imagen->tamanoEstructura,sizeof(int),1, archivo);
-	fread(&imagen->pxmh,sizeof(int),1, archivo);
-	fread(&imagen->pxmv,sizeof(int),1, archivo);
-	fread(&imagen->coloresUsados,sizeof(int),1, archivo);
-	fread(&imagen->coloresImportantes,sizeof(int),1, archivo);
-
-	//Validar ciertos datos de la cabecera de la imágen
-	if (imagen->bm[0]!='B'||imagen->bm[1]!='M')
-	{
-		printf ("La imagen debe ser un bitmap.\n");
-	}
-	if (imagen->profundidadColor!= 24)
-	{
-		printf ("La imagen debe ser de 24 bits.\n");
-	}
-
-	//Pasar la imágen a el arreglo reservado en escala de grises
-	//unsigned char R,B,G;
-	for (i=0;i<imagen->alto;i++)
-	{
-		for (j=0;j<imagen->ancho;j++){
-		  for (k=0;k<3;k++) {
-        fread(&P[k],sizeof(char),1, archivo); //Lectura de los pixeles
-        imagen->pixel[i][j][k]=(unsigned char)P[k]; 	//asignacion del valor del pixel al arreglo
+  	//Validar ciertos datos de la cabecera de la imágen
+  	if (imagen->bm[0]!='B'||imagen->bm[1]!='M')
+  	{
+  		printf ("La imagen debe ser un bitmap.\n");
+      imagen = NULL;
+  	}
+    else{
+    	if (imagen->profundidadColor!= 24)
+    	{
+    		printf ("La imagen debe ser de 24 bits.\n");
+        imagen = NULL;
+    	}
+      else{
+      	//Pasar la imágen a el arreglo reservado en escala de grises
+      	//unsigned char R,B,G;
+      	for (i=0;i<imagen->alto;i++)
+      	{
+      		for (j=0;j<imagen->ancho;j++){
+      		  for (k=0;k<3;k++) {
+              fread(&P[k],sizeof(char),1, archivo); //Lectura de los pixeles
+              imagen->pixel[i][j][k]=(unsigned char)P[k]; 	//asignacion del valor del pixel al arreglo
+            }
+      		}
+      	}
       }
-		}
-	}
-	//Cerrrar el archivo
-	fclose(archivo);
+  	}
+    //Cerrar el archivo
+  	fclose(archivo);
+  }
 }
 
 
@@ -124,37 +149,36 @@ void CrearImagen(BMP *imagen, char ruta[])
 	{
 		//Si la imágen no se encuentra en la ruta dada
 		printf( "La imágen %s no se pudo crear\n",ruta);
-		exit(1);
 	}
+  else{
+  	//Escribir la cabecera de la imagen en el archivo
+  	fseek( archivo,0, SEEK_SET);
+  	fwrite(&imagen->bm,sizeof(char),2, archivo);
+  	fwrite(&imagen->tamano,sizeof(int),1, archivo);
+  	fwrite(&imagen->reservado,sizeof(int),1, archivo);
+  	fwrite(&imagen->offset,sizeof(int),1, archivo);
+  	fwrite(&imagen->tamanoMetadatos,sizeof(int),1, archivo);
+  	fwrite(&imagen->alto,sizeof(int),1, archivo);
+  	fwrite(&imagen->ancho,sizeof(int),1, archivo);
+  	fwrite(&imagen->numeroPlanos,sizeof(short int),1, archivo);
+  	fwrite(&imagen->profundidadColor,sizeof(short int),1, archivo);
+  	fwrite(&imagen->tipoCompresion,sizeof(int),1, archivo);
+  	fwrite(&imagen->tamanoEstructura,sizeof(int),1, archivo);
+  	fwrite(&imagen->pxmh,sizeof(int),1, archivo);
+  	fwrite(&imagen->pxmv,sizeof(int),1, archivo);
+  	fwrite(&imagen->coloresUsados,sizeof(int),1, archivo);
+  	fwrite(&imagen->coloresImportantes,sizeof(int),1, archivo);
 
-	//Escribir la cabecera de la imagen en el archivo
-	fseek( archivo,0, SEEK_SET);
-	fwrite(&imagen->bm,sizeof(char),2, archivo);
-	fwrite(&imagen->tamano,sizeof(int),1, archivo);
-	fwrite(&imagen->reservado,sizeof(int),1, archivo);
-	fwrite(&imagen->offset,sizeof(int),1, archivo);
-	fwrite(&imagen->tamanoMetadatos,sizeof(int),1, archivo);
-	fwrite(&imagen->alto,sizeof(int),1, archivo);
-	fwrite(&imagen->ancho,sizeof(int),1, archivo);
-	fwrite(&imagen->numeroPlanos,sizeof(short int),1, archivo);
-	fwrite(&imagen->profundidadColor,sizeof(short int),1, archivo);
-	fwrite(&imagen->tipoCompresion,sizeof(int),1, archivo);
-	fwrite(&imagen->tamanoEstructura,sizeof(int),1, archivo);
-	fwrite(&imagen->pxmh,sizeof(int),1, archivo);
-	fwrite(&imagen->pxmv,sizeof(int),1, archivo);
-	fwrite(&imagen->coloresUsados,sizeof(int),1, archivo);
-	fwrite(&imagen->coloresImportantes,sizeof(int),1, archivo);
-
-	//Pasar la imágen del arreglo reservado en escala de grises a el archivo (Deben escribirse los valores BGR)
-	for (i=0;i<imagen->alto;i++)
-	{
-		for (j=0;j<imagen->ancho;j++)
-		{
-    	for (k=0;k<3;k++)
-		  	fwrite(&imagen->pixel[i][j][k],sizeof(char),1, archivo);  //Escribir el Byte Blue del pixel
-		}
-	}
-
+  	//Pasar la imágen del arreglo reservado en escala de grises a el archivo (Deben escribirse los valores BGR)
+  	for (i=0;i<imagen->alto;i++)
+  	{
+  		for (j=0;j<imagen->ancho;j++)
+  		{
+      	for (k=0;k<3;k++)
+  		  	fwrite(&imagen->pixel[i][j][k],sizeof(char),1, archivo);  //Escribir el Byte Blue del pixel
+  		}
+  	}
+  }
 	//Cerrar el archivo
 	fclose(archivo);
 }
@@ -226,7 +250,7 @@ void follow(EnvioCliente envioCliente, EnvioServer envioServer, int server, int 
       default:
         printf("Error desconocido\nContacte al desarrollador");
     }
-    }
+  }
 }
 
 //****************************************************************************************************************************************************
@@ -359,40 +383,105 @@ int desconexion(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user
 //Parametro que devuelve: Ninguno
 //****************************************************************************************************************************************************
 void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioServer envioServer){
-  if(tweets_leer == 0)
-    printf("No hay nuevos tweets.");
-  else{
-    envioCliente.operacion = RE_TWEETS;
-    envioCliente.cliente = user;
-    if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
-    {
-      perror("En escritura");
+  int tweetLeido = 0;
+  envioCliente.operacion = RE_TWEETS;
+  envioCliente.cliente = user;
+  if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
+  {
+    perror("En escritura");
+    exit(1);
+  }
+  tweets_leer = 1;
+  while(tweets_leer == 1){
+    if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
+      perror("En lectura");
       exit(1);
     }
-    while(tweets_leer > 0){
-      if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
-        perror("En lectura");
-        exit(1);
+    if(envioServer.respuesta == TWEET){
+      tweetLeido++;
+      printf("Tweet enviado por: %d\n %s", envioServer.tweet.id , envioServer.tweet.texto);
+      if(envioServer.tweet.conImagen == 1){
+        printf("Tweet enviado contiene una imagen\n");
       }
-      if(envioServer.respuesta == TWEET){
-        printf("Tweet enviado por: %d\n %s", envioServer.tweet.id , envioServer.tweet.texto);
-        if(datos.conImagen == 1){
-          printf("Tweet envviado contiene una imagen\n");
-        }
-      }
-      tweets_leer--;
     }
+    else{
+      if(envioServer.respuesta == ASINCRONO)
+        printf("Esta opcion no es valida en este modo de operacion\n");
+    }
+  }
+  if(tweetLeido == 0){
+    printf("No hay tweets pendientes de ser recuperados\n");
   }
 }
 
-void enviarTweet(Cliente user, int server, EnvioCliente envioCliente){
+//****************************************************************************************************************************************************
+//Función para que un usuario envie un tweet con o sin imagen y texto
+//Parametros de entrada: user-> informacion del usuario que va a enviar el tweet
+//                       server-> identificador del pipe por medio del cual sse envian datos al servidor
+//                       envioCliente-> variable para almacenar datos del envio del cliente al servidor
+//                       envioServer-> variable para recibir los datos que se envian desde el servidor
+//Parametro que devuelve: Ninguno
+//****************************************************************************************************************************************************
+void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServer envioServer){
+  char imagenC, textoC;
+  char ruta[TAM], strNum[TAMUSR];
+  char nombre_imagen[LINE];
+  BMP * img = NULL;
   printf("Desea enviar una imagen: \n");
-  //scanf("%d\n", &id);
-  printf("Escriba el tweet a enviar: \n");
-  //scanf("%d\n", &id);
-  //if(imagen == "s" || imagen == "S")
-  printf("Digite la ruta de la imagen a enviar: \n");
-  //scanf("%d\n", &id);
+  printf("Ingrese 'S' o 's' de ser caso afirmativo.\nIngrese 'N' o 'n' de ser caso negativo.\n");
+  scanf("%s", &imagenC);
+  if(strcasecmp(&imagenC,"S") == 0){
+    envioCliente.tweet.conImagen = 1;
+    printf("Digite la ruta de la imagen a enviar: \n");
+    scanf("%s", ruta);
+    AbrirImagen(img,ruta);
+    if(img != NULL){
+      envioCliente.tweet.imagen = *img;
+    }
+  }
+  else{
+    if(strcasecmp(&imagenC,"N") == 0){
+      envioCliente.tweet.conImagen = 0;
+    }
+    else
+      printf("Opcion invalida.\n");
+  }
+  printf("Desea enviar un texto: \n");
+  printf("Ingrese 'S' o 's' de ser caso afirmativo.\nIngrese 'N' o 'n' de ser caso negativo.\n");
+  scanf("%s", &textoC);
+  if(strcasecmp(&textoC,"S") == 0){
+    printf("Escriba el tweet a enviar: \n");
+    scanf("%s", envioCliente.tweet.texto);
+  }
+  else{
+    if(strcasecmp(&textoC,"N") == 0){
+      envioCliente.tweet.texto[0] = '\0';
+    }
+    else
+      printf("Opcion invalida.\n");
+  }
+  envioCliente.tweet.id = user.id;
+  envioCliente.operacion = TWEET_C;
+  envioCliente.cliente = user;
+  if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
+  {
+    perror("En escritura");
+    exit(1);
+  }
+  if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
+    perror("En lectura");
+    exit(1);
+  }
+  if(envioServer.respuesta == EXITO){
+    printf("Tweet enviado por: %d\n %s", envioServer.tweet.id , envioServer.tweet.texto);
+    if(envioServer.tweet.conImagen == 1){
+      printf("Tweet enviado contiene una imagen\n");
+      strcpy(nombre_imagen,"imagen");
+      sprintf(strNum,"%d%d_%d",tweets_imagen,user.id,envioServer.tweet.id);
+      strcat(nombre_imagen,strNum);
+      CrearImagen(&envioServer.tweet.imagen,nombre_imagen);
+    }
+  }
 }
 
 /*
@@ -408,7 +497,6 @@ int main (int argc, char **argv)
 {
   //Declaracion de variable necesarias
   int  server, descon = 0, opcion, id;
-  Tweet datos;
   EnvioCliente envioCliente;
   EnvioServer envioServer;
 
@@ -439,7 +527,7 @@ int main (int argc, char **argv)
   strcat(user.pipe_cliente, argv[1]+'\0');
   //Validacion de correcta creacion del pipe de comunicacion
   if (mkfifo (user.pipe_cliente, fifo_mode) == -1) {
-    perror("Cliente ya creado");
+    perror("Cliente ya registrado.");
     exit(1);
   }
 
@@ -477,7 +565,7 @@ int main (int argc, char **argv)
           break;
         case 3:
           //TODO Tweet
-          enviarTweet(user, server, envioCliente);
+          enviarTweet(user, server, envioCliente, envioServer);
           break;
         case 4:
           //TODO Recuperar
