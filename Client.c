@@ -14,14 +14,31 @@ Nota: todas las llamadas al sistema no estan validadas.
 #include <string.h>
 #include "tweet.h"
 
+//*****************************************************************
+//DECLARACIÓN DE TYPEDEF PARA EL MANEJO DE SENALES
+//*****************************************************************
 typedef void (*sighandler_t)(int);
 
+//*****************************************************************
+//DECLARACIÓN DE VARIABLES PARA EL MANEJO DE SENALES
+//*****************************************************************
 Cliente user;
 EnvioServer datos;
 unsigned int tweets_leer = 1;
 unsigned int tweets_imagen = 1;
 
+//*****************************************************************
+//DECLARACIÓN DE FUNCIONES
+//*****************************************************************
 void CrearImagen(BMP *imagen, char ruta[]);
+void AbrirImagen(BMP *imagen, char *ruta);
+int abrir_pipe(const char* pathname, int flags);
+void follow(EnvioCliente envioCliente, EnvioServer envioServer, int server, int id);
+void unfollow(EnvioCliente envioCliente, EnvioServer envioServer, int server, int id);
+int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, int server);
+int desconexion(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, int server);
+void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioServer envioServer);
+void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServer envioServer);
 
 sighandler_t tweet_receive(void)
 {
