@@ -154,7 +154,9 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
             if(write(clientes[i].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
               perror("En escritura");
             else
+            {
               kill(aux.pid, SIGUSR1);
+            }
           else
           {
             strcpy(archivo_tweet, "./tweet_pendientes/cliente_");
@@ -192,7 +194,8 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
             fclose(file);
             file = fopen(archivo_tweet, "ab");
             fwrite(&mensaje_server, sizeof(EnvioServer), 1, file);
-            kill(aux.pid, SIGUSR2);
+            if(clientes[i].id != -1 )
+              kill(aux.pid, SIGUSR2);
           }
         }
       }
@@ -214,12 +217,9 @@ void desconexion(Cliente clientes[], EnvioCliente mensaje_cliente)
   {
     printf("hola\n");
     close(clientes[aux.id - 1].pipe_id);
-    //sleep(30);
   }
   else
-  {
     perror("En escritura");
-  }
 }
 
 void verificarTweetsPendientes(Cliente user){
