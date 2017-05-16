@@ -81,7 +81,7 @@ void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
     {
       if(grafo[id_cliente][aux.id] == 0)
       {
-        grafo[id_cliente][aux.id] = 1;
+        grafo[id_cliente - 1][aux.id - 1] = 1;
         mensaje_server.respuesta = EXITO;
       }
       else
@@ -93,7 +93,8 @@ void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
   else
     mensaje_server.respuesta = INVALIDO;
   printf("\nESCRIBIendo\n");
-  escribir =write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer));
+  printf("%d %d %s\n", id_cliente, clientes[id_cliente].pipe_id, clientes[id_cliente].pipe_cliente);
+  escribir = write(clientes[id_cliente - 1].pipe_id, &mensaje_server, sizeof(EnvioServer));
   printf("\nESCRIBIII\n");
   if(escribir == -1)
     perror("En escritura");
@@ -125,7 +126,7 @@ void unfollow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
   }
   else
     mensaje_server.respuesta = INVALIDO;
-  if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
+  if(write(clientes[id_cliente - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
     perror("En escritura");
 }
 
@@ -149,7 +150,7 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
         if(modo == ASINCRONO)
         {
           if(clientes[i].id != -1 )
-            if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
+            if(write(clientes[i].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
               perror("En escritura");
             else
               kill(aux.pid, SIGUSR1);
@@ -313,7 +314,7 @@ int main (int argc, char **argv)
   {
 
     //Lectura de datos del pipe de comunicacion entre clientes y servidor
-    printf("read\n");
+    printf("read while true\n");
     if (read (server, &mensaje_cliente, sizeof(EnvioCliente)) == -1) {
       perror("En lectura");
       exit(1);
@@ -335,11 +336,13 @@ int main (int argc, char **argv)
         unfollow(N, clientes, grafo, mensaje_cliente);
         break;
       case TWEET_C:
-        //TODO Recuperar
+        //TODO realizar un tweet
         break;
       case RE_TWEETS:
-        //TODO Desconexion
+        //TODO recuperar tweet
         break;
+      case DESCONEXION:
+        //TODO Desconexion
     }
     //TODO mandar señal
   }
