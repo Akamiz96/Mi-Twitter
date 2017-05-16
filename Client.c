@@ -42,6 +42,132 @@ sighandler_t tweets(void)
   tweets_leer++;
 }
 
+//*************************************************************************************************************************************************
+//Función para abrir la imagen, colocarla en escala de grisis en la estructura imagen imagen (Arreglo de bytes de alto*ancho  --- 1 Byte por pixel 0-255)
+//Parametros de entrada: Referencia a un BMP (Estructura BMP), Referencia a la cadena ruta char ruta[]=char *ruta
+//Parametro que devuelve: Ninguno
+//*************************************************************************************************************************************************
+void AbrirImagen(BMP *imagen, char *ruta)
+{
+	FILE *archivo;	//Puntero FILE para el archivo de imágen a abrir
+	int i,j,k;
+  unsigned char P[3];
+
+	//Abrir el archivo de imágen
+	archivo = fopen( ruta, "rb+" );
+	if(!archivo)
+	{
+		//Si la imágen no se encuentra en la ruta dada
+		printf( "La imágen %s no fue encontrada\n",ruta);
+	}
+
+	//Leer la cabecera de la imagen y almacenarla en la estructura a la que apunta imagen
+	fseek( archivo,0, SEEK_SET);
+	fread(&imagen->bm,sizeof(char),2, archivo);
+	fread(&imagen->tamano,sizeof(int),1, archivo);
+	fread(&imagen->reservado,sizeof(int),1, archivo);
+	fread(&imagen->offset,sizeof(int),1, archivo);
+	fread(&imagen->tamanoMetadatos,sizeof(int),1, archivo);
+	fread(&imagen->alto,sizeof(int),1, archivo);
+	fread(&imagen->ancho,sizeof(int),1, archivo);
+	fread(&imagen->numeroPlanos,sizeof(short int),1, archivo);
+	fread(&imagen->profundidadColor,sizeof(short int),1, archivo);
+	fread(&imagen->tipoCompresion,sizeof(int),1, archivo);
+	fread(&imagen->tamanoEstructura,sizeof(int),1, archivo);
+	fread(&imagen->pxmh,sizeof(int),1, archivo);
+	fread(&imagen->pxmv,sizeof(int),1, archivo);
+	fread(&imagen->coloresUsados,sizeof(int),1, archivo);
+	fread(&imagen->coloresImportantes,sizeof(int),1, archivo);
+
+	//Validar ciertos datos de la cabecera de la imágen
+	if (imagen->bm[0]!='B'||imagen->bm[1]!='M')
+	{
+		printf ("La imagen debe ser un bitmap.\n");
+	}
+	if (imagen->profundidadColor!= 24)
+	{
+		printf ("La imagen debe ser de 24 bits.\n");
+	}
+
+	//Reservar memoria para la matriz de pixels
+	imagen->pixel=malloc (imagen->alto* sizeof(char *));
+	for( i=0; i<imagen->alto; i++){
+		imagen->pixel[i]=malloc (imagen->ancho* sizeof(char*));
+
+	}
+    for( i=0; i<imagen->alto; i++){
+        for( j=0; j<imagen->ancho; j++)
+            imagen->pixel[i][j]=malloc(3*sizeof(char));
+	}
+
+	//Pasar la imágen a el arreglo reservado en escala de grises
+	//unsigned char R,B,G;
+	for (i=0;i<imagen->alto;i++)
+	{
+		for (j=0;j<imagen->ancho;j++){
+		  for (k=0;k<3;k++) {
+        fread(&P[k],sizeof(char),1, archivo); //Lectura de los pixeles
+        imagen->pixel[i][j][k]=(unsigned char)P[k]; 	//asignacion del valor del pixel al arreglo
+      }
+		}
+	}
+	//Cerrrar el archivo
+	fclose(archivo);
+}
+
+
+//****************************************************************************************************************************************************
+//Función para crear una imagen BMP, a partir de la estructura imagen imagen (Arreglo de bytes de alto*ancho  --- 1 Byte por pixel 0-255)
+//Parametros de entrada: Referencia a un BMP (Estructura BMP), Referencia a la cadena ruta char ruta[]=char *ruta
+//Parametro que devuelve: Ninguno
+//****************************************************************************************************************************************************
+void CrearImagen(BMP *imagen, char ruta[])
+{
+	FILE *archivo;	//Puntero FILE para el archivo de imágen a abrir
+	int i,j,k;
+
+	//Abrir el archivo de imágen
+	archivo = fopen( ruta, "wb+" );
+	if(!archivo)
+	{
+		//Si la imágen no se encuentra en la ruta dada
+		printf( "La imágen %s no se pudo crear\n",ruta);
+		exit(1);
+	}
+
+	//Escribir la cabecera de la imagen en el archivo
+	fseek( archivo,0, SEEK_SET);
+	fwrite(&imagen->bm,sizeof(char),2, archivo);
+	fwrite(&imagen->tamano,sizeof(int),1, archivo);
+	fwrite(&imagen->reservado,sizeof(int),1, archivo);
+	fwrite(&imagen->offset,sizeof(int),1, archivo);
+	fwrite(&imagen->tamanoMetadatos,sizeof(int),1, archivo);
+	fwrite(&imagen->alto,sizeof(int),1, archivo);
+	fwrite(&imagen->ancho,sizeof(int),1, archivo);
+	fwrite(&imagen->numeroPlanos,sizeof(short int),1, archivo);
+	fwrite(&imagen->profundidadColor,sizeof(short int),1, archivo);
+	fwrite(&imagen->tipoCompresion,sizeof(int),1, archivo);
+	fwrite(&imagen->tamanoEstructura,sizeof(int),1, archivo);
+	fwrite(&imagen->pxmh,sizeof(int),1, archivo);
+	fwrite(&imagen->pxmv,sizeof(int),1, archivo);
+	fwrite(&imagen->coloresUsados,sizeof(int),1, archivo);
+	fwrite(&imagen->coloresImportantes,sizeof(int),1, archivo);
+
+	//Pasar la imágen del arreglo reservado en escala de grises a el archivo (Deben escribirse los valores BGR)
+	for (i=0;i<imagen->alto;i++)
+	{
+		for (j=0;j<imagen->ancho;j++)
+		{
+    	for (k=0;k<3;k++)
+		  	fwrite(&imagen->pixel[i][j][k],sizeof(char),1, archivo);  //Escribir el Byte Blue del pixel
+		}
+	}
+
+	//Cerrar el archivo
+	fclose(archivo);
+}
+
+
 int abrir_pipe(const char* pathname, int flags)
 {
   int abierto = 0, id_pipe;
@@ -192,7 +318,9 @@ int desconexion(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user
 }
 
 /*
-Main ejecutable del programa cliente
+/*********************************************************************************************************
+//PROGRAMA PRINCIPAL
+//*********************************************************************************************************
 Parametros para su ejecucion:
   ->id: identificacion del usuario a conectarse al sistema
   ->pipeNom: nombre del pipe de comunicacion entre el usuario y el cliente

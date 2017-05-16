@@ -35,7 +35,7 @@ typedef struct BMP
 	int pxmv;					//(4 Bytes) Píxeles por metro vertical
 	int coloresUsados;				//(4 Bytes) Cantidad de colores usados
 	int coloresImportantes;			//(4 Bytes) Cantidad de colores importantes
-	unsigned char pixel[TAM][TAM][NPIXEL]; 			//Puntero a una tabla dinamica de caracteres de 3 dimensiones para almacenar los pixeles
+	unsigned char ***pixel; 			//Puntero a una tabla dinamica de caracteres de 3 dimensiones para almacenar los pixeles
 }BMP;
 
 /*

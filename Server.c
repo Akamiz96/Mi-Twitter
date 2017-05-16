@@ -223,8 +223,9 @@ void desconexion(Cliente clientes[], EnvioCliente mensaje_cliente)
 }
 
 /*
-
-Main ejecutable del programa servidor
+/*********************************************************************************************************
+//PROGRAMA PRINCIPAL
+//*********************************************************************************************************
 Parametros para su ejecucion:
   ->N: Numero de clientes que el sistema debe controlar
       (No todos estan conectados al mismo tiempo)
