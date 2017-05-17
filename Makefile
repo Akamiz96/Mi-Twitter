@@ -1,4 +1,4 @@
-all: cliente.exe servidor.exe clean
+all: cliente.exe servidor.exe clean clean_pipes
 
 cliente.exe: Client.o
 	gcc Client.o -o cliente.exe
@@ -14,3 +14,6 @@ Client.o: Client.c tweet.h
 
 clean:
 	-rm -f *.o
+
+clean_pipes:
+	-rm -f cliente_*

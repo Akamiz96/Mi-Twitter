@@ -26,12 +26,13 @@ Cliente user;
 EnvioServer datos;
 unsigned int tweets_leer = 1;
 unsigned int tweets_imagen = 1;
+Respuesta modoOperacion;
 
 //*****************************************************************
 //DECLARACIÓN DE FUNCIONES
 //*****************************************************************
 void CrearImagen(BMP *imagen, char ruta[]);
-void AbrirImagen(BMP *imagen, char *ruta);
+int AbrirImagen(BMP *imagen, char *ruta);
 int abrir_pipe(const char* pathname, int flags);
 void follow(EnvioCliente envioCliente, EnvioServer envioServer, int server, int id);
 void unfollow(EnvioCliente envioCliente, EnvioServer envioServer, int server, int id);
@@ -69,18 +70,19 @@ sighandler_t tweets(void)
 //Parametros de entrada: Referencia a un BMP (Estructura BMP), Referencia a la cadena ruta char ruta[]=char *ruta
 //Parametro que devuelve: Ninguno
 //*************************************************************************************************************************************************
-void AbrirImagen(BMP *imagen, char *ruta)
+int AbrirImagen(BMP *imagen, char *ruta)
 {
 	FILE *archivo;	//Puntero FILE para el archivo de imágen a abrir
 	int i,j,k;
   unsigned char P[3];
-
+  printf("Imagen => %s\n", ruta);
 	//Abrir el archivo de imágen
 	archivo = fopen( ruta, "rb+" );
 	if(!archivo)
 	{
 		//Si la imágen no se encuentra en la ruta dada
-		printf( "La imágen %s no fue encontrada\n",ruta);
+		printf( "La imagen %s no fue encontrada\n",ruta);
+    return 0;
 	}
   else{
   	//Leer la cabecera de la imagen y almacenarla en la estructura a la que apunta imagen
@@ -105,13 +107,13 @@ void AbrirImagen(BMP *imagen, char *ruta)
   	if (imagen->bm[0]!='B'||imagen->bm[1]!='M')
   	{
   		printf ("La imagen debe ser un bitmap.\n");
-      imagen = NULL;
+      return 0;
   	}
     else{
     	if (imagen->profundidadColor!= 24)
     	{
     		printf ("La imagen debe ser de 24 bits.\n");
-        imagen = NULL;
+        return 0;
     	}
       else{
       	//Pasar la imágen a el arreglo reservado en escala de grises
@@ -129,7 +131,9 @@ void AbrirImagen(BMP *imagen, char *ruta)
   	}
     //Cerrar el archivo
   	fclose(archivo);
+    return 1;
   }
+  printf("SALI\n");
 }
 
 
@@ -325,6 +329,7 @@ int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, 
   switch(envioServer.respuesta){
     case EXITO:
       printf("Registrado exitosamente.\n");
+      modoOperacion = SINCRONO;
       return pipe_id;
       break;
     case INVALIDO:
@@ -386,31 +391,39 @@ void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioS
   int tweetLeido = 0;
   envioCliente.operacion = RE_TWEETS;
   envioCliente.cliente = user;
-  if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
-  {
-    perror("En escritura");
-    exit(1);
-  }
-  tweets_leer = 1;
-  while(tweets_leer == 1){
-    if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
-      perror("En lectura");
+  if(modoOperacion == SINCRONO){
+    if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
+    {
+      perror("En escritura");
       exit(1);
     }
-    if(envioServer.respuesta == TWEET){
-      tweetLeido++;
-      printf("Tweet enviado por: %d\n %s", envioServer.tweet.id , envioServer.tweet.texto);
-      if(envioServer.tweet.conImagen == 1){
-        printf("Tweet enviado contiene una imagen\n");
+    tweets_leer = 1;
+    while(tweets_leer == 1){
+      if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
+        perror("En lectura");
+        exit(1);
+      }
+      if(envioServer.respuesta == TWEET){
+        tweetLeido++;
+        printf("Tweet enviado por: %d\n %s", envioServer.tweet.id , envioServer.tweet.texto);
+        if(envioServer.tweet.conImagen == 1){
+          printf("Tweet enviado contiene una imagen\n");
+        }
+      }
+      else{
+        if(envioServer.respuesta == ASINCRONO){
+          printf("Esta opcion no es valida en este modo de operacion\n");
+          modoOperacion = ASINCRONO;
+          tweetLeido = 1;
+        }
       }
     }
-    else{
-      if(envioServer.respuesta == ASINCRONO)
-        printf("Esta opcion no es valida en este modo de operacion\n");
+    if(tweetLeido == 0){
+      printf("No hay tweets pendientes de ser recuperados\n");
     }
   }
-  if(tweetLeido == 0){
-    printf("No hay tweets pendientes de ser recuperados\n");
+  else{
+    printf("Esta opcion no es valida en este modo de operacion\n");
   }
 }
 
@@ -423,64 +436,78 @@ void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioS
 //Parametro que devuelve: Ninguno
 //****************************************************************************************************************************************************
 void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServer envioServer){
-  char imagenC, textoC;
+
+  int opc, imagenCorrecta;
   char ruta[TAM], strNum[TAMUSR];
   char nombre_imagen[LINE];
-  BMP * img = NULL;
-  printf("Desea enviar una imagen: \n");
-  printf("Ingrese 'S' o 's' de ser caso afirmativo.\nIngrese 'N' o 'n' de ser caso negativo.\n");
-  scanf("%s", &imagenC);
-  if(strcasecmp(&imagenC,"S") == 0){
-    envioCliente.tweet.conImagen = 1;
+  char* tweet;
+  int line = LINE;
+  BMP *img = NULL;
+
+  printf("Ingrese la opcion que desea.\n");
+  printf("1. Tweet con texto sin imagen.\n2. Tweet con texto y con imagen\n");
+  printf("3. Tweet con imagen y sin texto.\n");
+  scanf("%d", &opc);
+  switch(opc){
+    case 1:
+    printf("Escriba el tweet a enviar: \n");
+    fgets(envioCliente.tweet.texto,LINE,stdin);
+    break;
+    case 2:
+    printf("Escriba el tweet a enviar: \n");
+    fgets(envioCliente.tweet.texto,LINE,stdin);
     printf("Digite la ruta de la imagen a enviar: \n");
     scanf("%s", ruta);
-    AbrirImagen(img,ruta);
-    if(img != NULL){
+    envioCliente.tweet.conImagen = 1;
+    img = malloc(sizeof(BMP));
+    imagenCorrecta=AbrirImagen(img,ruta);
+    if(imagenCorrecta == 1){
       envioCliente.tweet.imagen = *img;
     }
-  }
-  else{
-    if(strcasecmp(&imagenC,"N") == 0){
-      envioCliente.tweet.conImagen = 0;
+    break;
+    case 3:
+    envioCliente.tweet.texto[0] = '\0';
+    printf("Digite la ruta de la imagen a enviar: \n");
+    scanf("%s", ruta);
+    envioCliente.tweet.conImagen = 1;
+    img = malloc(sizeof(BMP));
+    imagenCorrecta=AbrirImagen(img,ruta);
+    if(imagenCorrecta == 1){
+      envioCliente.tweet.imagen = *img;
     }
-    else
-      printf("Opcion invalida.\n");
-  }
-  printf("Desea enviar un texto: \n");
-  printf("Ingrese 'S' o 's' de ser caso afirmativo.\nIngrese 'N' o 'n' de ser caso negativo.\n");
-  scanf("%s", &textoC);
-  if(strcasecmp(&textoC,"S") == 0){
-    printf("Escriba el tweet a enviar: \n");
-    scanf("%s", envioCliente.tweet.texto);
-  }
-  else{
-    if(strcasecmp(&textoC,"N") == 0){
-      envioCliente.tweet.texto[0] = '\0';
-    }
-    else
-      printf("Opcion invalida.\n");
+    break;
+    default:
+    printf("Opcion invalida.\n");
   }
   envioCliente.tweet.id = user.id;
   envioCliente.operacion = TWEET_C;
   envioCliente.cliente = user;
-  if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
-  {
-    perror("En escritura");
-    exit(1);
-  }
-  if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
-    perror("En lectura");
-    exit(1);
-  }
-  if(envioServer.respuesta == EXITO){
-    printf("Tweet enviado por: %d\n %s", envioServer.tweet.id , envioServer.tweet.texto);
-    if(envioServer.tweet.conImagen == 1){
-      printf("Tweet enviado contiene una imagen\n");
-      strcpy(nombre_imagen,"imagen");
-      sprintf(strNum,"%d%d_%d",tweets_imagen,user.id,envioServer.tweet.id);
-      strcat(nombre_imagen,strNum);
-      CrearImagen(&envioServer.tweet.imagen,nombre_imagen);
+  if(imagenCorrecta == 1){
+    printf("Write\n");
+    if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
+    {
+      perror("En escritura");
+      exit(1);
     }
+    printf("read\n");
+    if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
+      perror("En lectura");
+      exit(1);
+    }
+    printf("If\n");
+    if(envioServer.respuesta == EXITO){
+      printf("Tweet enviado por: %d\n %s", envioServer.tweet.id , envioServer.tweet.texto);
+      if(envioServer.tweet.conImagen == 1){
+        printf("Tweet enviado contiene una imagen\n");
+        strcpy(nombre_imagen,"imagen");
+        sprintf(strNum,"%d%d_%d",tweets_imagen,user.id,envioServer.tweet.id);
+        strcat(nombre_imagen,strNum);
+        CrearImagen(&envioServer.tweet.imagen,nombre_imagen);
+      }
+    }
+  }
+  else{
+    printf("HOLA\n");
   }
 }
 
