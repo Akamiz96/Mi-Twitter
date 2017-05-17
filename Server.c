@@ -174,12 +174,13 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
 
   if(aux.id <= N && aux.id >= 1 )
   {
+    printf("IF\n");
+    mensaje_server.respuesta = TWEET;
+    mensaje_server.tweet = mensaje_cliente.tweet;
+    if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
+      perror("En escritura");
     for(i = 0; i < N; i++)
     {
-      mensaje_server.respuesta = TWEET;
-      mensaje_server.tweet = mensaje_cliente.tweet;
-      if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
-        perror("En escritura");
       if(grafo[i][aux.id - 1] == 1)
       {
         if(modo == ASINCRONO)
@@ -234,7 +235,7 @@ void recuperar_tweets(Cliente clientes[], EnvioCliente mensaje_cliente, Respuest
           perror("En escritura");
       }
     }
-    remove(archivo_tweet);    
+    remove(archivo_tweet);
   }
   else
   {
@@ -400,6 +401,7 @@ int main (int argc, char **argv)
         break;
       case TWEET_C:
         //TODO realizar un tweet
+        printf("TWEET\n");
         tweet(N, clientes, grafo, modo, mensaje_cliente);
         break;
       case RE_TWEETS:

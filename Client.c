@@ -444,14 +444,20 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
   int line = LINE;
   BMP *img = NULL;
 
+  tweet = malloc(LINE);
   printf("Ingrese la opcion que desea.\n");
   printf("1. Tweet con texto sin imagen.\n2. Tweet con texto y con imagen\n");
   printf("3. Tweet con imagen y sin texto.\n");
   scanf("%d", &opc);
   switch(opc){
     case 1:
+    fflush(stdin);
     printf("Escriba el tweet a enviar: \n");
-    fgets(envioCliente.tweet.texto,LINE,stdin);
+    scanf("%s", envioCliente.tweet.texto);
+    //fgets(tweet,LINE,stdin);
+    //strcpy(envioCliente.tweet.texto,tweet);
+    printf("=>%s\n", envioCliente.tweet.texto);
+    imagenCorrecta = 1;
     break;
     case 2:
     printf("Escriba el tweet a enviar: \n");
