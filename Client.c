@@ -452,14 +452,14 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
   switch(opc){
     case 1:
     printf("Escriba el tweet a enviar: \n");
-    scanf ("%[^\n]%*c", tweet);
-    printf("=>%s\n", tweet);
+    scanf ("%[^\n]%*c", envioCliente.tweet.texto);
+    printf("=>%s\n", envioCliente.tweet.texto);
     imagenCorrecta = 1;
     break;
     case 2:
     printf("Escriba el tweet a enviar: \n");
-    scanf ("%[^\n]%*c", tweet);
-    printf("=>%s\n", tweet);
+    scanf ("%[^\n]%*c", envioCliente.tweet.texto);
+    printf("=>%s\n", envioCliente.tweet.texto);
     printf("Digite la ruta de la imagen a enviar: \n");
     scanf("%s", ruta);
     envioCliente.tweet.conImagen = 1;
@@ -499,7 +499,7 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
       exit(1);
     }
     printf("If\n");
-    if(envioServer.respuesta == EXITO){
+    if(envioServer.respuesta == TWEET){
       printf("Tweet enviado por: %d\n %s", envioServer.tweet.id , envioServer.tweet.texto);
       if(envioServer.tweet.conImagen == 1){
         printf("Tweet enviado contiene una imagen\n");
