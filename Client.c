@@ -437,31 +437,29 @@ void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioS
 //****************************************************************************************************************************************************
 void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServer envioServer){
 
-  int opc, imagenCorrecta;
+  int valOpc,opc,imagenCorrecta, a;
   char ruta[TAM], strNum[TAMUSR];
   char nombre_imagen[LINE];
-  char* tweet;
-  int line = LINE;
+  char tweet[LINE];
+  size_t line = LINE;
   BMP *img = NULL;
 
-  tweet = malloc(LINE);
   printf("Ingrese la opcion que desea.\n");
   printf("1. Tweet con texto sin imagen.\n2. Tweet con texto y con imagen\n");
   printf("3. Tweet con imagen y sin texto.\n");
   scanf("%d", &opc);
+  while(getchar() != '\n');
   switch(opc){
     case 1:
-    fflush(stdin);
     printf("Escriba el tweet a enviar: \n");
-    scanf("%s", envioCliente.tweet.texto);
-    //fgets(tweet,LINE,stdin);
-    //strcpy(envioCliente.tweet.texto,tweet);
-    printf("=>%s\n", envioCliente.tweet.texto);
+    scanf ("%[^\n]%*c", tweet);
+    printf("=>%s\n", tweet);
     imagenCorrecta = 1;
     break;
     case 2:
     printf("Escriba el tweet a enviar: \n");
-    fgets(envioCliente.tweet.texto,LINE,stdin);
+    scanf ("%[^\n]%*c", tweet);
+    printf("=>%s\n", tweet);
     printf("Digite la ruta de la imagen a enviar: \n");
     scanf("%s", ruta);
     envioCliente.tweet.conImagen = 1;
@@ -581,12 +579,14 @@ int main (int argc, char **argv)
       printf("5. Desconexion\n\n> ");
       //Lectura de la opcion del cliente
       scanf("%d", &opcion);
+      while(getchar() != '\n');
       //Eleccion de la funcionalidad segun la eleccion del cliente
       switch (opcion) {
         //Caso para la opcion de FOLLOW
         case 1:
           printf("Ingresar id del usuario a seguir: ");
           scanf("%d", &id);
+          while(getchar() != '\n');
           follow(envioCliente, envioServer, server, id);
           break;
         //Caso para la opcion de Unfollow
@@ -594,6 +594,7 @@ int main (int argc, char **argv)
           //TODO Unfollow
           printf("Ingresar id del usuario a no seguir mas: ");
           scanf("%d", &id);
+          while(getchar() != '\n');
           unfollow(envioCliente, envioServer, server, id);
           break;
         case 3:
