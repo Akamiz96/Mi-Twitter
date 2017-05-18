@@ -309,7 +309,13 @@ void recuperar_tweets(Cliente clientes[], EnvioCliente mensaje_cliente, Respuest
   {
     nombre_archivo(aux.id, archivo_tweet);
     file = fopen(archivo_tweet, "rb");
-    if(file != NULL);
+    if(file == NULL){
+      mensaje_server.respuesta = FALLO;
+      if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
+          perror("En escritura");
+      kill(aux.pid, SIGUSR2);
+    }
+    else
     {
       while (!feof(file))
       {
