@@ -1,9 +1,21 @@
 /*
-Autor: M. Curiel
-funcion: Ilustra la creaci'on de pipe nominales.
-Nota: todas las llamadas al sistema no estan validadas.
-*/
+==================MI_TWITER========================
+ */
+//*****************************************************************
+/*
+Realizado por Pablo Ariza y Alejandro Castro
+Proyecto Sistemas Operativos 2017-10
+Compilacion: gcc Client.c -o cliente.exe
+Observaciones: Para el correcto funcionamiento de este programa debe
+                ser ejecutado antes de haber ejecutado el programa
+                Client.c
+  ->Temas principales: Comunicacion a traves de pipes y senales
+ */
+//*****************************************************************
 
+//*****************************************************************
+//LIBRERIAS INCLUIDAS
+//*****************************************************************
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
@@ -14,6 +26,14 @@ Nota: todas las llamadas al sistema no estan validadas.
 #include <string.h>
 #include "tweet.h"
 
+//****************************************************************************************************************************************************
+//Función para la apertura del pipe segun los flags ingresados
+//Parametros de entrada: pathname-> nombre que tendra el pipe,
+//                       flags-> modificadores con los cuales se abrira el pipe
+//Parametro que devuelve: entero indicando si el pipe fue abierto correctamente
+//                        Si se abre correctamente-> id del pipe
+//                        De lo contrario-> -1
+//****************************************************************************************************************************************************
 int abrir_pipe(const char* pathname, int flags)
 {
   int abierto = 0, id_pipe;
@@ -30,6 +50,12 @@ int abrir_pipe(const char* pathname, int flags)
   return id_pipe;
 }
 
+//****************************************************************************************************************************************************
+//Función para obtener el nombre del archivo con el cual se guardaran los tweets pendientes
+//Parametros de entrada: aux_id-> id numerico del usuario al cual se le creara el archivo
+//                       archivo_tweet-> cadena de caracteres donde se almacenara el nombre creado
+//Parametro que devuelve: NINGUNO
+//****************************************************************************************************************************************************
 void nombre_archivo(int aux_id, char* archivo_tweet)
 {
   char final[LINE];
@@ -39,6 +65,14 @@ void nombre_archivo(int aux_id, char* archivo_tweet)
   printf("%s\n", archivo_tweet);
 }
 
+//****************************************************************************************************************************************************
+//Función para buscar un usuario/cliente dado a traves del pid (process id) entre los clientes existentes
+//Parametros de entrada: N-> cantidad de posibles clientes que se pueden conectar al sistema
+//                       clientes-> estructura que contiene los clientes del sistema
+//                       pid_cliente-> id del cliente a buscar
+//Parametro que devuelve: id con el esta registrado dicho pid (process id)
+//                        si no lo encuentra devuelve -1
+//****************************************************************************************************************************************************
 int buscar_cliente_pid(int N, Cliente clientes[], pid_t pid_cliente)
 {
   int i, encontrado = 0, id = -1;
@@ -55,6 +89,14 @@ int buscar_cliente_pid(int N, Cliente clientes[], pid_t pid_cliente)
   return id;
 }
 
+//****************************************************************************************************************************************************
+//Función para registrar un usuario dentro del sistema
+//Parametros de entrada: N-> cantidad de posibles clientes que se pueden conectar al sistema
+//                       clientes-> estructura que contiene los clientes del sistema
+//                       modo-> modo en el cual se encuentra subido el servidor (SINCRONO/ASINCRONO)
+//                       mensaje_cliente-> mensaje enviado por el cliente para su registro en el sistema
+//Parametro que devuelve: NINGUNO
+//****************************************************************************************************************************************************
 void registrar(int N, Cliente clientes[], Respuesta modo, EnvioCliente mensaje_cliente)
 {
   char archivo_tweet[LINE];
@@ -103,10 +145,18 @@ void registrar(int N, Cliente clientes[], Respuesta modo, EnvioCliente mensaje_c
     printf("salio while registrar\n");
     remove(archivo_tweet);
   }
-  //POR AQUI CREO QUE IRIA PERO NO ESTOY SEGURO 
+  //POR AQUI CREO QUE IRIA PERO NO ESTOY SEGURO
   printf("salio de registrar\n");
 }
 
+//****************************************************************************************************************************************************
+//Función para que un usuario empiece a seguir a un usuario
+//Parametros de entrada: N-> cantidad de posibles clientes que se pueden conectar al sistema
+//                       clientes-> estructura que contiene los clientes del sistema
+//                       grafo-> estructura de datos (matriz de adyacencia) de las relaciones entre clientes
+//                       mensaje_cliente-> mensaje enviado por el cliente para seguir a otro usuario
+//Parametro que devuelve: NINGUNO
+//****************************************************************************************************************************************************
 void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
             EnvioCliente mensaje_cliente)
 {
@@ -142,6 +192,14 @@ void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
     printf("\nEscribi\n");
 }
 
+//****************************************************************************************************************************************************
+//Función para que un usuario deje de seguir a un usuario
+//Parametros de entrada: N-> cantidad de posibles clientes que se pueden conectar al sistema
+//                       clientes-> estructura que contiene los clientes del sistema
+//                       grafo-> estructura de datos (matriz de adyacencia) de las relaciones entre clientes
+//                       mensaje_cliente-> mensaje enviado por el cliente para dejar de seguir a otro usuario
+//Parametro que devuelve: NINGUNO
+//****************************************************************************************************************************************************
 void unfollow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
               EnvioCliente mensaje_cliente)
 {
@@ -171,6 +229,15 @@ void unfollow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
     perror("En escritura");
 }
 
+//****************************************************************************************************************************************************
+//Función para el control de un tweet enviado por un usuario
+//Parametros de entrada: N-> cantidad de posibles clientes que se pueden conectar al sistema
+//                       clientes-> estructura que contiene los clientes del sistema
+//                       grafo-> estructura de datos (matriz de adyacencia) de las relaciones entre clientes
+//                       modo-> modo en el cual se encuentra subido el servidor (SINCRONO/ASINCRONO)
+//                       mensaje_cliente-> mensaje enviado por el cliente que contiene el tweet enviado
+//Parametro que devuelve: NINGUNO
+//****************************************************************************************************************************************************
 void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
            EnvioCliente mensaje_cliente)
 {
@@ -220,6 +287,14 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
     mensaje_server.respuesta = INVALIDO;
 }
 
+//****************************************************************************************************************************************************
+//Función para que un usuario pueda recuperar tweets que se encuentren en el sistema para dicho usuario
+//UNICAMENTE funciona en modo SINCRONO
+//Parametros de entrada: clientes-> estructura que contiene los clientes del sistema
+//                       mensaje_cliente-> mensaje enviado por el cliente que contiene el tweet enviado
+//                       modo-> modo en el cual se encuentra subido el servidor (SINCRONO/ASINCRONO)
+//Parametro que devuelve: NINGUNO
+//****************************************************************************************************************************************************
 void recuperar_tweets(Cliente clientes[], EnvioCliente mensaje_cliente, Respuesta modo)
 {
   char archivo_tweet[LINE];
@@ -258,6 +333,12 @@ void recuperar_tweets(Cliente clientes[], EnvioCliente mensaje_cliente, Respuest
   }
 }
 
+//****************************************************************************************************************************************************
+//Función para que un usuario pueda desconectarse del sistema exitosamente
+//Parametros de entrada: clientes-> estructura que contiene los clientes del sistema
+//                       mensaje_cliente-> mensaje enviado por el cliente que contiene el tweet enviado
+//Parametro que devuelve: NINGUNO
+//****************************************************************************************************************************************************
 void desconexion(Cliente clientes[], EnvioCliente mensaje_cliente)
 {
   Cliente aux = (mensaje_cliente.cliente);

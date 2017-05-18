@@ -1,9 +1,22 @@
 /*
-Autor: M. Curiel
-funcion: Ilustra la creaci'on de pipe nominales.
-Nota: todas las llamadas al sistema no estan validadas.
-*/
+==================MI_TWITER========================
+ */
+//*****************************************************************
+/*
+Realizado por Pablo Ariza y Alejandro Castro
+Proyecto Sistemas Operativos 2017-10 => MI_TWITER
+Compilacion: gcc Client.c -o cliente.exe
+Observaciones: Para el correcto funcionamiento de este programa debe
+                ser ejecutado despues de haber ejecutado el programa
+                Server.c.
+  ->Temas principales: Comunicacion a traves de pipes y senales
+ */
+//*****************************************************************
 
+
+//*****************************************************************
+//LIBRERIAS INCLUIDAS
+//*****************************************************************
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
@@ -41,6 +54,10 @@ int desconexion(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user
 void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioServer envioServer);
 void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServer envioServer);
 
+//*************************************************************************************************************************************************
+//Manejador de senales para el caso de la llegada de la senal
+//para el control de tweets en modo asincrono
+//*************************************************************************************************************************************************
 sighandler_t tweet_receive(void)
 {
   char nombre_imagen[LINE], strNum[TAMUSR];
@@ -61,6 +78,10 @@ sighandler_t tweet_receive(void)
   }
 }
 
+//*************************************************************************************************************************************************
+//Manejador de senales para el caso de que ya no existan
+//mas tweets a leer
+//*************************************************************************************************************************************************
 sighandler_t tweets(void)
 {
   tweets_leer = 0;
