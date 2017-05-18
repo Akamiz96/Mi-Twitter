@@ -361,6 +361,7 @@ int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, 
         strcpy(nombre_imagen,"imagen");
         sprintf(strNum,"%d%d_%d.bmp",tweets_imagen,user.id,envioServer.tweet.id);
         strcat(nombre_imagen,strNum);
+        tweets_imagen++;
         CrearImagen(&envioServer.tweet.imagen,nombre_imagen);
       }
     }
@@ -442,6 +443,7 @@ void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioS
           strcpy(nombre_imagen,"imagen");
           sprintf(strNum,"%d%d_%d.bmp",tweets_imagen,user.id,envioServer.tweet.id);
           strcat(nombre_imagen,strNum);
+          tweets_imagen++;
           CrearImagen(&envioServer.tweet.imagen,nombre_imagen);
         }
       }
@@ -533,12 +535,13 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
     }
     printf("If\n");
     if(envioServer.respuesta == TWEET){
-      printf("Tweet enviado por: %d\n %s", envioServer.tweet.id , envioServer.tweet.texto);
+      printf("Tweet enviado por: %d\n %s\n", envioServer.tweet.id , envioServer.tweet.texto);
       if(envioServer.tweet.conImagen == 1){
         printf("\nTweet enviado contiene una imagen\n");
         strcpy(nombre_imagen,"imagen");
         sprintf(strNum,"%d%d_%d.bmp",tweets_imagen,user.id,envioServer.tweet.id);
         strcat(nombre_imagen,strNum);
+        tweets_imagen++;
         CrearImagen(&envioServer.tweet.imagen,nombre_imagen);
       }
     }
@@ -562,6 +565,7 @@ void leerTweetsPendientes(){
       strcpy(nombre_imagen,"imagen");
       sprintf(strNum,"%d%d_%d.bmp",tweets_imagen,user.id,datos[cantidad_Tweets_Leer-1].tweet.id);
       strcat(nombre_imagen,strNum);
+      tweets_imagen++;
       CrearImagen(&datos[cantidad_Tweets_Leer-1].tweet.imagen,nombre_imagen);
     }
     cantidad_Tweets_Leer--;
