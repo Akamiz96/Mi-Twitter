@@ -103,6 +103,7 @@ void registrar(int N, Cliente clientes[], Respuesta modo, EnvioCliente mensaje_c
     printf("salio while registrar\n");
     remove(archivo_tweet);
   }
+  //POR AQUI CREO QUE IRIA PERO NO ESTOY SEGURO 
   printf("salio de registrar\n");
 }
 

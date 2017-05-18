@@ -57,6 +57,7 @@ sighandler_t tweet_receive(void)
     sprintf(strNum,"%d%d_%d",tweets_imagen,user.id,datos.tweet.id);
     strcat(nombre_imagen,strNum);
     CrearImagen(&datos.tweet.imagen,nombre_imagen);
+    tweets_imagen++;
   }
 }
 
@@ -311,6 +312,7 @@ void unfollow(EnvioCliente envioCliente, EnvioServer envioServer, int server, in
 //****************************************************************************************************************************************************
 int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, int server){
   int pipe_id, leer;
+  char nombre_imagen[LINE], strNum[TAMUSR];
   envioCliente.operacion = REGISTER;
   envioCliente.cliente = user;
   printf("write\n");
@@ -330,17 +332,41 @@ int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, 
     case EXITO:
       printf("Registrado exitosamente.\n");
       modoOperacion = SINCRONO;
-      return pipe_id;
       break;
     case INVALIDO:
       printf("Registro no completado\nYa se encuentra registrado en el sistema.");
-      return -1;
       break;
     default:
       printf("Error desconocido\nContacte al desarrollador");
-      return -1;
   }
+  if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
+  {
+    perror("En escritura");
+    exit(1);
+  }
+  tweets_leer = 1;
+  while(tweets_leer == 1){
+    if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
+      perror("En lectura");
+      exit(1);
+    }
+    if(envioServer.respuesta == TWEET){
+      printf("Tweet enviado por: %d\n  =>%s", envioServer.tweet.id , envioServer.tweet.texto);
+      if(envioServer.tweet.conImagen == 1){
+        printf("\nTweet enviado contiene una imagen\n");
+        strcpy(nombre_imagen,"imagen");
+        sprintf(strNum,"%d%d_%d",tweets_imagen,user.id,envioServer.tweet.id);
+        strcat(nombre_imagen,strNum);
+        CrearImagen(&envioServer.tweet.imagen,nombre_imagen);
+      }
+    }
+  }
+  if (envioServer.respuesta == EXITO)
+    return pipe_id;
+  else
+    return -1;
 }
+
 
 //****************************************************************************************************************************************************
 //Función para que un usuario se pueda desconectar del servidor
@@ -389,6 +415,7 @@ int desconexion(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user
 //****************************************************************************************************************************************************
 void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioServer envioServer){
   int tweetLeido = 0;
+  char nombre_imagen[LINE], strNum[TAMUSR];
   envioCliente.operacion = RE_TWEETS;
   envioCliente.cliente = user;
   if(modoOperacion == SINCRONO){
@@ -405,9 +432,13 @@ void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioS
       }
       if(envioServer.respuesta == TWEET){
         tweetLeido++;
-        printf("Tweet enviado por: %d\n %s", envioServer.tweet.id , envioServer.tweet.texto);
+        printf("Tweet enviado por: %d\n   =>%s", envioServer.tweet.id , envioServer.tweet.texto);
         if(envioServer.tweet.conImagen == 1){
           printf("Tweet enviado contiene una imagen\n");
+          strcpy(nombre_imagen,"imagen");
+          sprintf(strNum,"%d%d_%d",tweets_imagen,user.id,envioServer.tweet.id);
+          strcat(nombre_imagen,strNum);
+          CrearImagen(&envioServer.tweet.imagen,nombre_imagen);
         }
       }
       else{
@@ -502,7 +533,7 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
     if(envioServer.respuesta == TWEET){
       printf("Tweet enviado por: %d\n %s", envioServer.tweet.id , envioServer.tweet.texto);
       if(envioServer.tweet.conImagen == 1){
-        printf("Tweet enviado contiene una imagen\n");
+        printf("\nTweet enviado contiene una imagen\n");
         strcpy(nombre_imagen,"imagen");
         sprintf(strNum,"%d%d_%d",tweets_imagen,user.id,envioServer.tweet.id);
         strcat(nombre_imagen,strNum);
