@@ -111,7 +111,8 @@ void registrar(int N, Cliente clientes[], Respuesta modo, EnvioCliente mensaje_c
     {
       clientes[aux.id - 1] = mensaje_cliente.cliente;
       clientes[aux.id - 1].id = aux.id;
-      clientes[aux.id - 1].pipe_id = abrir_pipe(aux.pipe_cliente, O_WRONLY);
+      clientes[aux.id - 1].pid = aux.pid;
+      clientes[aux.id - 1].pipe_id = abrir_pipe(aux.pipe_cliente, O_WRONLY|O_NONBLOCK);
       mensaje_server.respuesta = EXITO;
     }
     else
@@ -120,32 +121,33 @@ void registrar(int N, Cliente clientes[], Respuesta modo, EnvioCliente mensaje_c
   else
     mensaje_server.respuesta = INVALIDO;
   printf("write %d %s\n", clientes[aux.id - 1].pipe_id, aux.pipe_cliente);
+  nombre_archivo(aux.id, archivo_tweet);
+  file = fopen(archivo_tweet, "rb");
+  if(file == NULL)
+    kill(aux.pid, SIGUSR2);
   if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
     perror("En escritura");
   else
     printf("escribio Registro\n");
   printf("nombre_archivo\n");
-  nombre_archivo(aux.id, archivo_tweet);
-  file = fopen(archivo_tweet, "rb");
-  size_t respuesta;
+  /*nombre_archivo(aux.id, archivo_tweet);
+  file = fopen(archivo_tweet, "rb");*/
   if(file != NULL)
   {
     while (!feof(file))
     {
-      if( respuesta = fread(&mensaje_server, sizeof(EnvioServer), 1, file) != 0)
+      if(fread(&mensaje_server, sizeof(EnvioServer), 1, file) != 0)
       {
-        kill(aux.pid, SIGUSR1);
-      if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
-        perror("En escritura");
-      else
-        printf("%s %zu %zu\n", mensaje_server.tweet.texto, respuesta, sizeof(EnvioServer));
+        if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
+          perror("En escritura");
       }
+      else
+        kill(aux.pid, SIGUSR2);
       printf("salio if registrar\n");
     }
     printf("salio while registrar\n");
     remove(archivo_tweet);
   }
-  //POR AQUI CREO QUE IRIA PERO NO ESTOY SEGURO
   printf("salio de registrar\n");
 }
 
@@ -313,16 +315,14 @@ void recuperar_tweets(Cliente clientes[], EnvioCliente mensaje_cliente, Respuest
         if(fread(&mensaje_server, sizeof(EnvioServer), 1, file) != 0)
         {
           mensaje_server.respuesta = TWEET;
-          //if(feof(file))
-          //else
-            if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
+          if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
               perror("En escritura");
         }
         else
           kill(aux.pid, SIGUSR2);
       }
+      remove(archivo_tweet);
     }
-    remove(archivo_tweet);
   }
   else
   {

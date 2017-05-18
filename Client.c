@@ -85,6 +85,7 @@ sighandler_t tweet_receive(void)
 sighandler_t tweets(void)
 {
   tweets_leer = 0;
+  //printf("%d\n", tweets_leer);
 }
 
 //*************************************************************************************************************************************************
@@ -333,6 +334,7 @@ void unfollow(EnvioCliente envioCliente, EnvioServer envioServer, int server, in
 //****************************************************************************************************************************************************
 int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, int server){
   int pipe_id, leer;
+  tweets_leer = 1;
   char nombre_imagen[LINE], strNum[TAMUSR];
   envioCliente.operacion = REGISTER;
   envioCliente.cliente = user;
@@ -360,17 +362,17 @@ int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, 
     default:
       printf("Error desconocido\nContacte al desarrollador");
   }
-  if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
+  /*if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
   {
     perror("En escritura");
     exit(1);
-  }
-  tweets_leer = 1;
+  }*/
   while(tweets_leer == 1){
-    if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
+    printf("cualquier cosa %d %d\n", user.pid, tweets_leer);
+    if (read (pipe_id, &envioServer, sizeof(envioServer)) == -1) {
       perror("En lectura");
-      exit(1);
     }
+    printf("cualquier cosa\n");
     if(envioServer.respuesta == TWEET){
       printf("Tweet enviado por: %d\n  =>%s", envioServer.tweet.id , envioServer.tweet.texto);
       if(envioServer.tweet.conImagen == 1){
@@ -382,7 +384,7 @@ int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, 
       }
     }
   }
-  if (envioServer.respuesta == EXITO)
+  if (envioServer.respuesta == EXITO || envioServer.respuesta == TWEET)
     return pipe_id;
   else
     return -1;
@@ -439,13 +441,13 @@ void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioS
   char nombre_imagen[LINE], strNum[TAMUSR];
   envioCliente.operacion = RE_TWEETS;
   envioCliente.cliente = user;
+  tweets_leer = 1;
   if(modoOperacion == SINCRONO){
     if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
     {
       perror("En escritura");
       exit(1);
     }
-    tweets_leer = 1;
     while(tweets_leer == 1){
       if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
         perror("En lectura");
