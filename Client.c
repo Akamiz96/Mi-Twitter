@@ -446,19 +446,19 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
 
   printf("Ingrese la opcion que desea.\n");
   printf("1. Tweet con texto sin imagen.\n2. Tweet con texto y con imagen\n");
-  printf("3. Tweet con imagen y sin texto.\n");
+  printf("3. Tweet con imagen y sin texto.\n> ");
   scanf("%d", &opc);
   while(getchar() != '\n');
   switch(opc){
     case 1:
     printf("Escriba el tweet a enviar: \n");
-    scanf ("%[^\n]%*c", envioCliente.tweet.texto);
+    scanf ("%139[^\n]%*c", envioCliente.tweet.texto);
     printf("=>%s\n", envioCliente.tweet.texto);
     imagenCorrecta = 1;
     break;
     case 2:
     printf("Escriba el tweet a enviar: \n");
-    scanf ("%[^\n]%*c", envioCliente.tweet.texto);
+    scanf ("%139[^\n]%*c", envioCliente.tweet.texto);
     printf("=>%s\n", envioCliente.tweet.texto);
     printf("Digite la ruta de la imagen a enviar: \n");
     scanf("%s", ruta);

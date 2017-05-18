@@ -82,21 +82,28 @@ void registrar(int N, Cliente clientes[], Respuesta modo, EnvioCliente mensaje_c
     perror("En escritura");
   else
     printf("escribio Registro\n");
-  printf("hola\n");
+  printf("nombre_archivo\n");
   nombre_archivo(aux.id, archivo_tweet);
   file = fopen(archivo_tweet, "rb");
+  size_t respuesta;
   if(file != NULL)
   {
     while (!feof(file))
     {
-      fread(&mensaje_server, sizeof(EnvioServer), 1, file);
+      if( respuesta = fread(&mensaje_server, sizeof(EnvioServer), 1, file) != 0)
+      {
+        kill(aux.pid, SIGUSR1);
       if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
         perror("En escritura");
       else
-        kill(aux.pid, SIGUSR1);
+        printf("%s %zu %zu\n", mensaje_server.tweet.texto, respuesta, sizeof(EnvioServer));
+      }
+      printf("salio if registrar\n");
     }
+    printf("salio while registrar\n");
     remove(archivo_tweet);
   }
+  printf("salio de registrar\n");
 }
 
 void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
@@ -192,7 +199,7 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
               kill(aux.pid, SIGUSR1);
           else
           {
-            nombre_archivo(aux.id, archivo_tweet);
+            nombre_archivo(i + 1, archivo_tweet);
             file = fopen(archivo_tweet, "ab");
             fwrite(&mensaje_server, sizeof(EnvioServer), 1, file);
             fclose(file);
@@ -200,7 +207,7 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
         }
         else
         {
-          nombre_archivo(aux.id, archivo_tweet);
+          nombre_archivo(i + 1, archivo_tweet);
           file = fopen(archivo_tweet, "ab");
           fwrite(&mensaje_server, sizeof(EnvioServer), 1, file);
           fclose(file);
@@ -227,12 +234,16 @@ void recuperar_tweets(Cliente clientes[], EnvioCliente mensaje_cliente, Respuest
     {
       while (!feof(file))
       {
-        fread(&mensaje_server, sizeof(EnvioServer), 1, file);
-        mensaje_server.respuesta = TWEET;
-        if(feof(file))
+        if(fread(&mensaje_server, sizeof(EnvioServer), 1, file) != 0)
+        {
+          mensaje_server.respuesta = TWEET;
+          //if(feof(file))
+          //else
+            if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
+              perror("En escritura");
+        }
+        else
           kill(aux.pid, SIGUSR2);
-        if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
-          perror("En escritura");
       }
     }
     remove(archivo_tweet);
