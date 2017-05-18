@@ -258,15 +258,16 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
       perror("En escritura");
     for(i = 0; i < N; i++)
     {
-      if(grafo[i][aux.id - 1] == 1)
+      if(grafo[i][aux.id - 1] == 1 && aux.id - 1 != i)
       {
         if(modo == ASINCRONO)
         {
-          if(clientes[i].id != -1 )
+          if(clientes[i].id != -1 ){
             if(write(clientes[i].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
               perror("En escritura");
-            else
-              kill(aux.pid, SIGUSR1);
+            printf("Signal a: %d\n", aux.id);
+            kill(aux.pid, SIGUSR1);
+          }
           else
           {
             nombre_archivo(i + 1, archivo_tweet);
@@ -310,6 +311,7 @@ void recuperar_tweets(Cliente clientes[], EnvioCliente mensaje_cliente, Respuest
     file = fopen(archivo_tweet, "rb");
     if(file != NULL);
     {
+      printf("FILE != NULL\n");
       while (!feof(file))
       {
         if(fread(&mensaje_server, sizeof(EnvioServer), 1, file) != 0)
@@ -318,9 +320,12 @@ void recuperar_tweets(Cliente clientes[], EnvioCliente mensaje_cliente, Respuest
           if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
               perror("En escritura");
         }
-        else
+        else{
+          printf("SIGNAL\n");
           kill(aux.pid, SIGUSR2);
+        }
       }
+      printf("REMOVE\n");
       remove(archivo_tweet);
     }
   }

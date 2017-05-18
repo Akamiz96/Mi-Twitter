@@ -36,9 +36,10 @@ typedef void (*sighandler_t)(int);
 //DECLARACIÓN DE VARIABLES PARA EL MANEJO DE SENALES
 //*****************************************************************
 Cliente user;
-EnvioServer datos;
+EnvioServer datos[TAMUSR];
 unsigned int tweets_leer = 1;
 unsigned int tweets_imagen = 1;
+unsigned int cantidad_Tweets_Leer = 0;
 Respuesta modoOperacion;
 
 //*****************************************************************
@@ -60,22 +61,8 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
 //*************************************************************************************************************************************************
 sighandler_t tweet_receive(void)
 {
-  char nombre_imagen[LINE], strNum[TAMUSR];
-  // Se lee un mensaje por el segundo pipe.
-  if(read(user.pipe_id, &datos, sizeof(Tweet) == -1))
-  {
-   perror("En lectura");
-   exit(1);
-  }
-  printf("Tweet enviado por: %d\n %s\n", datos.tweet.id , datos.tweet.texto);
-  if(datos.tweet.conImagen == 1){
-    printf("Tweet enviado contiene una imagen\n");
-    strcpy(nombre_imagen,"imagen");
-    sprintf(strNum,"%d%d_%d",tweets_imagen,user.id,datos.tweet.id);
-    strcat(nombre_imagen,strNum);
-    CrearImagen(&datos.tweet.imagen,nombre_imagen);
-    tweets_imagen++;
-  }
+  cantidad_Tweets_Leer++;
+  printf("Signal\n");
 }
 
 //*************************************************************************************************************************************************
@@ -85,7 +72,6 @@ sighandler_t tweet_receive(void)
 sighandler_t tweets(void)
 {
   tweets_leer = 0;
-  //printf("%d\n", tweets_leer);
 }
 
 //*************************************************************************************************************************************************
@@ -362,23 +348,18 @@ int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, 
     default:
       printf("Error desconocido\nContacte al desarrollador");
   }
-  /*if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
-  {
-    perror("En escritura");
-    exit(1);
-  }*/
   while(tweets_leer == 1){
-    printf("cualquier cosa %d %d\n", user.pid, tweets_leer);
+    printf("\ncualquier cosa %d %d\n", user.pid, tweets_leer);
     if (read (pipe_id, &envioServer, sizeof(envioServer)) == -1) {
       perror("En lectura");
     }
     printf("cualquier cosa\n");
     if(envioServer.respuesta == TWEET){
-      printf("Tweet enviado por: %d\n  =>%s", envioServer.tweet.id , envioServer.tweet.texto);
+      printf("Tweet enviado por: %d\n  =>%s\n", envioServer.tweet.id , envioServer.tweet.texto);
       if(envioServer.tweet.conImagen == 1){
-        printf("\nTweet enviado contiene una imagen\n");
+        printf("Tweet enviado contiene una imagen\n");
         strcpy(nombre_imagen,"imagen");
-        sprintf(strNum,"%d%d_%d",tweets_imagen,user.id,envioServer.tweet.id);
+        sprintf(strNum,"%d%d_%d.bmp",tweets_imagen,user.id,envioServer.tweet.id);
         strcat(nombre_imagen,strNum);
         CrearImagen(&envioServer.tweet.imagen,nombre_imagen);
       }
@@ -459,7 +440,7 @@ void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioS
         if(envioServer.tweet.conImagen == 1){
           printf("Tweet enviado contiene una imagen\n");
           strcpy(nombre_imagen,"imagen");
-          sprintf(strNum,"%d%d_%d",tweets_imagen,user.id,envioServer.tweet.id);
+          sprintf(strNum,"%d%d_%d.bmp",tweets_imagen,user.id,envioServer.tweet.id);
           strcat(nombre_imagen,strNum);
           CrearImagen(&envioServer.tweet.imagen,nombre_imagen);
         }
@@ -492,8 +473,8 @@ void recuperarTweets(Cliente user, int server, EnvioCliente envioCliente, EnvioS
 void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServer envioServer){
 
   int valOpc,opc,imagenCorrecta, a;
-  char ruta[TAM], strNum[TAMUSR];
-  char nombre_imagen[LINE];
+  char ruta[TAM];
+  char nombre_imagen[LINE], strNum[TAMUSR];
   char tweet[LINE];
   size_t line = LINE;
   BMP *img = NULL;
@@ -507,13 +488,11 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
     case 1:
     printf("Escriba el tweet a enviar: \n");
     scanf ("%139[^\n]%*c", envioCliente.tweet.texto);
-    printf("=>%s\n", envioCliente.tweet.texto);
     imagenCorrecta = 1;
     break;
     case 2:
     printf("Escriba el tweet a enviar: \n");
     scanf ("%139[^\n]%*c", envioCliente.tweet.texto);
-    printf("=>%s\n", envioCliente.tweet.texto);
     printf("Digite la ruta de la imagen a enviar: \n");
     scanf("%s", ruta);
     envioCliente.tweet.conImagen = 1;
@@ -558,7 +537,7 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
       if(envioServer.tweet.conImagen == 1){
         printf("\nTweet enviado contiene una imagen\n");
         strcpy(nombre_imagen,"imagen");
-        sprintf(strNum,"%d%d_%d",tweets_imagen,user.id,envioServer.tweet.id);
+        sprintf(strNum,"%d%d_%d.bmp",tweets_imagen,user.id,envioServer.tweet.id);
         strcat(nombre_imagen,strNum);
         CrearImagen(&envioServer.tweet.imagen,nombre_imagen);
       }
@@ -566,6 +545,26 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
   }
   else{
     printf("HOLA\n");
+  }
+}
+
+void leerTweetsPendientes(){
+  char nombre_imagen[LINE], strNum[TAMUSR];
+  while(cantidad_Tweets_Leer > 0){
+    // Se lee un mensaje por el segundo pipe.
+    if(read(user.pipe_id, &(datos[cantidad_Tweets_Leer-1]), sizeof(EnvioServer) == -1))
+    {
+     perror("En lectura");
+    }
+    printf("Tweet enviado por: %d\n %s\n", datos[cantidad_Tweets_Leer-1].tweet.id , datos[cantidad_Tweets_Leer-1].tweet.texto);
+    if(datos[cantidad_Tweets_Leer-1].tweet.conImagen == 1){
+      printf("Tweet enviado contiene una imagen\n");
+      strcpy(nombre_imagen,"imagen");
+      sprintf(strNum,"%d%d_%d.bmp",tweets_imagen,user.id,datos[cantidad_Tweets_Leer-1].tweet.id);
+      strcat(nombre_imagen,strNum);
+      CrearImagen(&datos[cantidad_Tweets_Leer-1].tweet.imagen,nombre_imagen);
+    }
+    cantidad_Tweets_Leer--;
   }
 }
 
@@ -584,6 +583,7 @@ int main (int argc, char **argv)
   int  server, descon = 0, opcion, id;
   EnvioCliente envioCliente;
   EnvioServer envioServer;
+  char nombre_imagen[LINE], strNum[TAMUSR];
 
   //Definicion del tipo de lectura o escritura del pipe
   mode_t fifo_mode = S_IRUSR | S_IWUSR;
@@ -628,11 +628,15 @@ int main (int argc, char **argv)
     //Ciclo de control de opciones sobre el cliente
     do
     {
+      printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
+      leerTweetsPendientes();
       //Impresion del menu para el cliente
       printf("Menu:\n1. Follow\n2. Unfollow\n3. Tweet\n4. Recuperar tweets\n");
       printf("5. Desconexion\n\n> ");
       //Lectura de la opcion del cliente
       scanf("%d", &opcion);
+      printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
+      leerTweetsPendientes();
       while(getchar() != '\n');
       //Eleccion de la funcionalidad segun la eleccion del cliente
       switch (opcion) {
@@ -641,6 +645,8 @@ int main (int argc, char **argv)
           printf("Ingresar id del usuario a seguir: ");
           scanf("%d", &id);
           while(getchar() != '\n');
+          printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
+          leerTweetsPendientes();
           follow(envioCliente, envioServer, server, id);
           break;
         //Caso para la opcion de Unfollow
@@ -649,22 +655,32 @@ int main (int argc, char **argv)
           printf("Ingresar id del usuario a no seguir mas: ");
           scanf("%d", &id);
           while(getchar() != '\n');
+          printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
+          leerTweetsPendientes();
           unfollow(envioCliente, envioServer, server, id);
           break;
         case 3:
           //TODO Tweet
+          printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
+          leerTweetsPendientes();
           enviarTweet(user, server, envioCliente, envioServer);
           break;
         case 4:
           //TODO Recuperar
+          printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
+          leerTweetsPendientes();
           recuperarTweets(user, server, envioCliente, envioServer);
           break;
         //Caso para la desconexion del cliente respecto al servidor
         case 5:
           //TODO Desconexion
+          printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
+          leerTweetsPendientes();
           descon = desconexion(envioCliente, envioServer, user, server);
           break;
         default:
+          printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
+          leerTweetsPendientes();
           printf("Opcion Invalida\nIntente de nuevo");
       }//Fin seleccion de la opcion
     } while(!descon);//Fin ciclo de control
