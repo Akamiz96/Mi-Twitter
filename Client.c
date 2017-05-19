@@ -66,7 +66,6 @@ sighandler_t tweet_receive(void)
   // Se lee un mensaje por el segundo pipe.
   if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
     perror("En lectura");
-    exit(1);
   }
   printf("Tweet enviado por: %d\n %s\n", envioServer.tweet.id , envioServer.tweet.texto);
   if(envioServer.tweet.conImagen == 1){
@@ -98,7 +97,6 @@ int AbrirImagen(BMP *imagen, char *ruta)
 	FILE *archivo;	//Puntero FILE para el archivo de imágen a abrir
 	int i,j,k;
   unsigned char P[3];
-  printf("Imagen => %s\n", ruta);
 	//Abrir el archivo de imágen
 	archivo = fopen( ruta, "rb+" );
 	if(!archivo)
@@ -156,7 +154,6 @@ int AbrirImagen(BMP *imagen, char *ruta)
   	fclose(archivo);
     return 1;
   }
-  printf("SALI\n");
 }
 
 
@@ -250,20 +247,14 @@ void follow(EnvioCliente envioCliente, EnvioServer envioServer, int server, int 
     envioCliente.operacion = FOLLOW;
     envioCliente.cliente.pid = user.pid;
     envioCliente.cliente.id = id;
-    printf("Write\n");
     if(write(server, &envioCliente , sizeof(EnvioCliente)) == -1)
     {
       perror("En escritura");
-      exit(1);
     }
-    printf("Reades\n");
     leer = read (user.pipe_id, &envioServer, sizeof(EnvioServer));
-    printf("Leer\n");
     if (leer == -1) {
       perror("En lectura");
-      exit(1);
     }
-    printf("Leyo\n");
     switch(envioServer.respuesta){
       case EXITO:
         printf("Ahora sigue al usuario con id: %d\n", id);
@@ -296,17 +287,13 @@ void unfollow(EnvioCliente envioCliente, EnvioServer envioServer, int server, in
     envioCliente.operacion = UNFOLLOW;
     envioCliente.cliente.pid = user.pid;
     envioCliente.cliente.id = id;
-    printf("Write\n");
     if(write(server, &envioCliente , sizeof(EnvioCliente)) == -1)
     {
       perror("En escritura");
-      exit(1);
     }
     if (read (user.pipe_id, &envioServer, sizeof(EnvioServer)) == -1) {
       perror("En lectura");
-      exit(1);
     }
-    printf("Leyo\n");
     switch(envioServer.respuesta){
       case EXITO:
         printf("Ahora no sigue al usuario con id: %d\n\n", id);
@@ -333,41 +320,44 @@ void unfollow(EnvioCliente envioCliente, EnvioServer envioServer, int server, in
 //                        -1 en caso contrario
 //****************************************************************************************************************************************************
 int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, int server){
+  printf("REGISTRO\n");
   int pipe_id, leer;
   tweets_leer = 1;
   char nombre_imagen[LINE], strNum[TAMUSR];
   envioCliente.operacion = REGISTER;
   envioCliente.cliente = user;
-  printf("write\n");
+  printf("REGISTRO WRITE\n=> %d", user.id);
   if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
   {
     perror("En escritura");
     exit(1);
   }
-  printf("Abrir\n");
   pipe_id = abrir_pipe(user.pipe_cliente, O_RDONLY);
   if (read (pipe_id, &envioServer, sizeof(envioServer)) == -1) {
     perror("En lectura");
     exit(1);
   }
-  printf("leyo\n");
   switch(envioServer.respuesta){
     case EXITO:
       printf("Registrado exitosamente.\n");
       modoOperacion = SINCRONO;
       break;
     case INVALIDO:
-      printf("Registro no completado\nYa se encuentra registrado en el sistema.");
+      printf("Registro no completado\nYa se encuentra registrado en el sistema.\n");
+      tweets_leer = 0;
+      break;
+    case INCORRECTO:
+      printf("Registro no completado\nNo existe el id digitado.\n");
+      tweets_leer = 0;
       break;
     default:
-      printf("Error desconocido\nContacte al desarrollador");
+      printf("Error desconocido\nContacte al desarrollador.\n");
+      tweets_leer = 0;
   }
   while(tweets_leer == 1){
-    printf("\ncualquier cosa %d %d\n", user.pid, tweets_leer);
     if (read (pipe_id, &envioServer, sizeof(envioServer)) == -1) {
       perror("En lectura");
     }
-    printf("cualquier cosa\n");
     if(envioServer.respuesta == TWEET){
       printf("Tweet enviado por: %d\n  =>%s\n", envioServer.tweet.id , envioServer.tweet.texto);
       if(envioServer.tweet.conImagen == 1){
@@ -536,18 +526,15 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
   envioCliente.operacion = TWEET_C;
   envioCliente.cliente = user;
   if(imagenCorrecta == 1){
-    printf("Write\n");
     if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
     {
       perror("En escritura");
       exit(1);
     }
-    printf("read\n");
     if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
       perror("En lectura");
       exit(1);
     }
-    printf("If\n");
     if(envioServer.respuesta == TWEET){
       printf("Tweet enviado por: %d\n %s\n", envioServer.tweet.id , envioServer.tweet.texto);
       if(envioServer.tweet.conImagen == 1){
@@ -560,13 +547,6 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
       }
     }
   }
-  else{
-    printf("HOLA\n");
-  }
-}
-
-void leerTweetsPendientes(){
-
 }
 
 /*
@@ -582,6 +562,7 @@ int main (int argc, char **argv)
 {
   //Declaracion de variable necesarias
   int  server, descon = 0, opcion, id;
+  int pipe_idNo;
   EnvioCliente envioCliente;
   EnvioServer envioServer;
   char nombre_imagen[LINE], strNum[TAMUSR];
@@ -623,21 +604,19 @@ int main (int argc, char **argv)
    Cualquier otro caso -> registro exitoso
    */
   user.pipe_id = registrar(envioCliente, envioServer, user, server);
+  printf("Fin REGISTRO\n");
 
   //Validacion de registro exitoso del cliente en el servidor
   if(user.pipe_id != -1){
+    printf("HOLA ENTRE A \n");
     //Ciclo de control de opciones sobre el cliente
     do
     {
-      printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
-      leerTweetsPendientes();
       //Impresion del menu para el cliente
       printf("Menu:\n1. Follow\n2. Unfollow\n3. Tweet\n4. Recuperar tweets\n");
       printf("5. Desconexion\n\n> ");
       //Lectura de la opcion del cliente
       scanf("%d", &opcion);
-      printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
-      leerTweetsPendientes();
       while(getchar() != '\n');
       //Eleccion de la funcionalidad segun la eleccion del cliente
       switch (opcion) {
@@ -646,8 +625,6 @@ int main (int argc, char **argv)
           printf("Ingresar id del usuario a seguir: ");
           scanf("%d", &id);
           while(getchar() != '\n');
-          printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
-          leerTweetsPendientes();
           follow(envioCliente, envioServer, server, id);
           break;
         //Caso para la opcion de Unfollow
@@ -656,35 +633,34 @@ int main (int argc, char **argv)
           printf("Ingresar id del usuario a no seguir mas: ");
           scanf("%d", &id);
           while(getchar() != '\n');
-          printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
-          leerTweetsPendientes();
           unfollow(envioCliente, envioServer, server, id);
           break;
         case 3:
           //TODO Tweet
-          printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
-          leerTweetsPendientes();
           enviarTweet(user, server, envioCliente, envioServer);
           break;
         case 4:
           //TODO Recuperar
-          printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
-          leerTweetsPendientes();
           recuperarTweets(user, server, envioCliente, envioServer);
           break;
         //Caso para la desconexion del cliente respecto al servidor
         case 5:
           //TODO Desconexion
-          printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
-          leerTweetsPendientes();
           descon = desconexion(envioCliente, envioServer, user, server);
           break;
         default:
-          printf("Tweets pendientes: %d\n", cantidad_Tweets_Leer);
-          leerTweetsPendientes();
           printf("Opcion Invalida\nIntente de nuevo");
       }//Fin seleccion de la opcion
     } while(!descon);//Fin ciclo de control
   }//Fin if
+  else{
+    if(user.pipe_id == -1){
+      pipe_idNo = abrir_pipe(user.pipe_cliente, O_RDONLY);
+      if (read (pipe_idNo, &envioServer, sizeof(envioServer)) == -1) {
+        perror("En lectura");
+      }
+    }
+    exit(1);
+  }
   exit(0);
 }

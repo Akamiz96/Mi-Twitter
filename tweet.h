@@ -16,7 +16,7 @@ typedef enum {REGISTER, FOLLOW, UNFOLLOW, TWEET_C, RE_TWEETS, DESCONEXION} Opera
 /*
 	Definicion de una enumeracion para las respuestas del servidor
  */
-typedef enum {EXITO, FALLO, TWEET, SINCRONO, ASINCRONO, INVALIDO} Respuesta;
+typedef enum {EXITO, FALLO, TWEET, SINCRONO, ASINCRONO, INVALIDO, INCORRECTO} Respuesta;
 
 /*
 	Estructura de datos para la imagen BMP que puede ser enviada por los usuarios

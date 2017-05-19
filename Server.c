@@ -26,6 +26,21 @@ Observaciones: Para el correcto funcionamiento de este programa debe
 #include <string.h>
 #include "tweet.h"
 
+//*****************************************************************
+//DECLARACIÓN DE FUNCIONES
+//*****************************************************************
+void desconexion(Cliente clientes[], EnvioCliente mensaje_cliente);
+void recuperar_tweets(Cliente clientes[], EnvioCliente mensaje_cliente, Respuesta modo);
+void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
+           EnvioCliente mensaje_cliente);
+void unfollow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
+              EnvioCliente mensaje_cliente);
+void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
+            EnvioCliente mensaje_cliente);void registrar(int N, Cliente clientes[], Respuesta modo, EnvioCliente mensaje_cliente);
+int buscar_cliente_pid(int N, Cliente clientes[], pid_t pid_cliente);
+void nombre_archivo(int aux_id, char* archivo_tweet);
+int abrir_pipe(const char* pathname, int flags);
+
 //****************************************************************************************************************************************************
 //Función para la apertura del pipe segun los flags ingresados
 //Parametros de entrada: pathname-> nombre que tendra el pipe,
@@ -62,7 +77,6 @@ void nombre_archivo(int aux_id, char* archivo_tweet)
   sprintf(final, "%d.dat", aux_id);
   strcpy(archivo_tweet, "./tweet_pendientes/cliente_");
   strcat(archivo_tweet, final);
-  printf("%s\n", archivo_tweet);
 }
 
 //****************************************************************************************************************************************************
@@ -85,7 +99,6 @@ int buscar_cliente_pid(int N, Cliente clientes[], pid_t pid_cliente)
       id = clientes[i].id;
     }
   }
-  printf("id encontrado: %d\n", id);
   return id;
 }
 
@@ -99,14 +112,18 @@ int buscar_cliente_pid(int N, Cliente clientes[], pid_t pid_cliente)
 //****************************************************************************************************************************************************
 void registrar(int N, Cliente clientes[], Respuesta modo, EnvioCliente mensaje_cliente)
 {
+  printf("REGISTRO\n=> %d", mensaje_cliente.cliente.id);
   char archivo_tweet[LINE];
   int num_tweets, i;
+  int pipe_idNo;
   FILE* file;
   Cliente aux = (mensaje_cliente.cliente);
   EnvioServer mensaje_server;
 
+  //Verificar si el id del usuario a registrar esta en el rango
   if(aux.id <= N && aux.id >= 1 )
   {
+    //Verificar si no se encuentra conectado
     if(clientes[aux.id - 1].id == -1)
     {
       clientes[aux.id - 1] = mensaje_cliente.cliente;
@@ -114,41 +131,41 @@ void registrar(int N, Cliente clientes[], Respuesta modo, EnvioCliente mensaje_c
       clientes[aux.id - 1].pid = aux.pid;
       clientes[aux.id - 1].pipe_id = abrir_pipe(aux.pipe_cliente, O_WRONLY|O_NONBLOCK);
       mensaje_server.respuesta = EXITO;
-    }
-    else
-      mensaje_server.respuesta = INVALIDO;
-  }
-  else
-    mensaje_server.respuesta = INVALIDO;
-  printf("write %d %s\n", clientes[aux.id - 1].pipe_id, aux.pipe_cliente);
-  nombre_archivo(aux.id, archivo_tweet);
-  file = fopen(archivo_tweet, "rb");
-  if(file == NULL)
-    kill(aux.pid, SIGUSR2);
-  if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
-    perror("En escritura");
-  else
-    printf("escribio Registro\n");
-  printf("nombre_archivo\n");
-  /*nombre_archivo(aux.id, archivo_tweet);
-  file = fopen(archivo_tweet, "rb");*/
-  if(file != NULL)
-  {
-    while (!feof(file))
-    {
-      if(fread(&mensaje_server, sizeof(EnvioServer), 1, file) != 0)
-      {
-        if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
-          perror("En escritura");
-      }
-      else
+      nombre_archivo(aux.id, archivo_tweet);
+      file = fopen(archivo_tweet, "rb");
+      if(file == NULL)
         kill(aux.pid, SIGUSR2);
-      printf("salio if registrar\n");
+      if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
+        perror("En escritura");
+      if(file != NULL)
+      {
+        while (!feof(file))
+        {
+          if(fread(&mensaje_server, sizeof(EnvioServer), 1, file) != 0)
+          {
+            if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
+            perror("En escritura");
+          }
+          else
+          kill(aux.pid, SIGUSR2);
+        }
+        remove(archivo_tweet);
+      }
     }
-    printf("salio while registrar\n");
-    remove(archivo_tweet);
+    else{
+      mensaje_server.respuesta = INVALIDO;
+      pipe_idNo = abrir_pipe(aux.pipe_cliente, O_WRONLY);
+      if(write(pipe_idNo, &mensaje_server, sizeof(EnvioServer)) == -1)
+        perror("En escritura");
+    }
   }
-  printf("salio de registrar\n");
+  else{
+    printf("HOLA\n");
+    mensaje_server.respuesta = INCORRECTO;
+    pipe_idNo = abrir_pipe(aux.pipe_cliente, O_WRONLY);
+    if(write(pipe_idNo, &mensaje_server, sizeof(EnvioServer)) == -1)
+      perror("En escritura");
+  }
 }
 
 //****************************************************************************************************************************************************
@@ -184,14 +201,9 @@ void follow(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR],
   }
   else
     mensaje_server.respuesta = INVALIDO;
-  printf("\nESCRIBIendo\n");
-  printf("%d %d %s\n", id_cliente - 1, clientes[id_cliente].pipe_id, clientes[id_cliente].pipe_cliente);
   escribir = write(clientes[id_cliente - 1].pipe_id, &mensaje_server, sizeof(EnvioServer));
-  printf("\nESCRIBIII\n");
   if(escribir == -1)
     perror("En escritura");
-  else
-    printf("\nEscribi\n");
 }
 
 //****************************************************************************************************************************************************
@@ -251,7 +263,6 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
 
   if(aux.id <= N && aux.id >= 1 )
   {
-    printf("IF\n");
     mensaje_server.respuesta = TWEET;
     mensaje_server.tweet = mensaje_cliente.tweet;
     if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
@@ -266,7 +277,6 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
             if(write(clientes[i].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
               perror("En escritura");
             kill(clientes[i].pid, SIGUSR1);
-            printf("Signal a: %d=> %d\n", clientes[i].id, mensaje_server.respuesta);
           }
           else
           {
@@ -354,7 +364,6 @@ void desconexion(Cliente clientes[], EnvioCliente mensaje_cliente)
 
   clientes[aux.id - 1].id = -1;
   mensaje_server.respuesta = EXITO;
-  printf("write %d %s\n", clientes[aux.id - 1].pipe_id, aux.pipe_cliente);
   if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) != -1)
   {
     printf("hola\n");
@@ -478,13 +487,10 @@ int main (int argc, char **argv)
   {
 
     //Lectura de datos del pipe de comunicacion entre clientes y servidor
-    printf("read while true\n");
     if (read (server, &mensaje_cliente, sizeof(EnvioCliente)) == -1) {
       perror("En lectura");
-      exit(1);
     }
-    printf("lei\n");
-
+    printf("LECTURA\n");
     //Validacion de la opcion correcta dependiendo del mensaje recibido por el servidor
     switch (mensaje_cliente.operacion) {
       //Caso para el REGISTRO de un cliente
@@ -500,18 +506,18 @@ int main (int argc, char **argv)
         unfollow(N, clientes, grafo, mensaje_cliente);
         break;
       case TWEET_C:
-        //TODO realizar un tweet
-        printf("TWEET\n");
+      //Caso para el manejo de envio de un tweet por parte de cualquier usuario
         tweet(N, clientes, grafo, modo, mensaje_cliente);
         break;
       case RE_TWEETS:
+      //Caso para el manejo de recuperar los tweets cuando un usuario lo indique
         recuperar_tweets(clientes, mensaje_cliente, modo);
         break;
       case DESCONEXION:
+      //caso para la desconexion de un usuario
         desconexion(clientes, mensaje_cliente);
         break;
     }
-    //TODO mandar señal
   }
   exit(0);
 }
