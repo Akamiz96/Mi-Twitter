@@ -36,7 +36,6 @@ typedef void (*sighandler_t)(int);
 //DECLARACIÓN DE VARIABLES PARA EL MANEJO DE SENALES
 //*****************************************************************
 Cliente user;
-EnvioServer datos[TAMUSR];
 unsigned int tweets_leer = 1;
 unsigned int tweets_imagen = 1;
 unsigned int cantidad_Tweets_Leer = 0;
@@ -61,8 +60,23 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
 //*************************************************************************************************************************************************
 sighandler_t tweet_receive(void)
 {
-  cantidad_Tweets_Leer++;
-  printf("Signal\n");
+  EnvioServer envioServer;
+  char nombre_imagen[LINE], strNum[TAMUSR];
+    printf("ID: %s\n", user.pipe_cliente);
+  // Se lee un mensaje por el segundo pipe.
+  if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
+    perror("En lectura");
+    exit(1);
+  }
+  printf("Tweet enviado por: %d\n %s\n", envioServer.tweet.id , envioServer.tweet.texto);
+  if(envioServer.tweet.conImagen == 1){
+    printf("Tweet enviado contiene una imagen\n");
+    strcpy(nombre_imagen,"imagen");
+    sprintf(strNum,"%d%d_%d.bmp",tweets_imagen,user.id,envioServer.tweet.id);
+    strcat(nombre_imagen,strNum);
+    tweets_imagen++;
+    CrearImagen(&envioServer.tweet.imagen,nombre_imagen);
+  }
 }
 
 //*************************************************************************************************************************************************
@@ -552,24 +566,7 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
 }
 
 void leerTweetsPendientes(){
-  char nombre_imagen[LINE], strNum[TAMUSR];
-  while(cantidad_Tweets_Leer > 0){
-    // Se lee un mensaje por el segundo pipe.
-    if(read(user.pipe_id, &(datos[cantidad_Tweets_Leer-1]), sizeof(EnvioServer) == -1))
-    {
-     perror("En lectura");
-    }
-    printf("Tweet enviado por: %d\n %s\n", datos[cantidad_Tweets_Leer-1].tweet.id , datos[cantidad_Tweets_Leer-1].tweet.texto);
-    if(datos[cantidad_Tweets_Leer-1].tweet.conImagen == 1){
-      printf("Tweet enviado contiene una imagen\n");
-      strcpy(nombre_imagen,"imagen");
-      sprintf(strNum,"%d%d_%d.bmp",tweets_imagen,user.id,datos[cantidad_Tweets_Leer-1].tweet.id);
-      strcat(nombre_imagen,strNum);
-      tweets_imagen++;
-      CrearImagen(&datos[cantidad_Tweets_Leer-1].tweet.imagen,nombre_imagen);
-    }
-    cantidad_Tweets_Leer--;
-  }
+
 }
 
 /*

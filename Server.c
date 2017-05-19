@@ -265,8 +265,8 @@ void tweet(int N, Cliente clientes[], int grafo[TAMUSR][TAMUSR], Respuesta modo,
           if(clientes[i].id != -1 ){
             if(write(clientes[i].pipe_id, &mensaje_server, sizeof(EnvioServer)) == -1)
               perror("En escritura");
-            printf("Signal a: %d\n", aux.id);
-            kill(aux.pid, SIGUSR1);
+            kill(clientes[i].pid, SIGUSR1);
+            printf("Signal a: %d=> %d\n", clientes[i].id, mensaje_server.respuesta);
           }
           else
           {
