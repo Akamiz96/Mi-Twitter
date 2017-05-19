@@ -1,4 +1,4 @@
-all: cliente.exe servidor.exe clean clean_pipes clean_archives create_archives
+all: cliente.exe servidor.exe clean clean_pipes clean_archives create_archives clean_images
 
 cliente.exe: Client.o
 	gcc Client.o -o cliente.exe
@@ -23,3 +23,6 @@ clean_archives:
 
 create_archives:
 	-mkdir tweet_pendientes
+
+clean_images:
+	-rm imagen*_*.bmp

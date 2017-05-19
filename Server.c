@@ -112,7 +112,6 @@ int buscar_cliente_pid(int N, Cliente clientes[], pid_t pid_cliente)
 //****************************************************************************************************************************************************
 void registrar(int N, Cliente clientes[], Respuesta modo, EnvioCliente mensaje_cliente)
 {
-  printf("REGISTRO\n=> %d", mensaje_cliente.cliente.id);
   char archivo_tweet[LINE];
   int num_tweets, i;
   int pipe_idNo;
@@ -160,7 +159,6 @@ void registrar(int N, Cliente clientes[], Respuesta modo, EnvioCliente mensaje_c
     }
   }
   else{
-    printf("HOLA\n");
     mensaje_server.respuesta = INCORRECTO;
     pipe_idNo = abrir_pipe(aux.pipe_cliente, O_WRONLY);
     if(write(pipe_idNo, &mensaje_server, sizeof(EnvioServer)) == -1)
@@ -366,7 +364,6 @@ void desconexion(Cliente clientes[], EnvioCliente mensaje_cliente)
   mensaje_server.respuesta = EXITO;
   if(write(clientes[aux.id - 1].pipe_id, &mensaje_server, sizeof(EnvioServer)) != -1)
   {
-    printf("hola\n");
     close(clientes[aux.id - 1].pipe_id);
   }
   else
@@ -490,7 +487,6 @@ int main (int argc, char **argv)
     if (read (server, &mensaje_cliente, sizeof(EnvioCliente)) == -1) {
       perror("En lectura");
     }
-    printf("LECTURA\n");
     //Validacion de la opcion correcta dependiendo del mensaje recibido por el servidor
     switch (mensaje_cliente.operacion) {
       //Caso para el REGISTRO de un cliente

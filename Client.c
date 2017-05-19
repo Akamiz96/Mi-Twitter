@@ -62,7 +62,6 @@ sighandler_t tweet_receive(void)
 {
   EnvioServer envioServer;
   char nombre_imagen[LINE], strNum[TAMUSR];
-    printf("ID: %s\n", user.pipe_cliente);
   // Se lee un mensaje por el segundo pipe.
   if (read (user.pipe_id, &envioServer, sizeof(envioServer)) == -1) {
     perror("En lectura");
@@ -320,13 +319,11 @@ void unfollow(EnvioCliente envioCliente, EnvioServer envioServer, int server, in
 //                        -1 en caso contrario
 //****************************************************************************************************************************************************
 int registrar(EnvioCliente envioCliente, EnvioServer envioServer, Cliente user, int server){
-  printf("REGISTRO\n");
   int pipe_id, leer;
   tweets_leer = 1;
   char nombre_imagen[LINE], strNum[TAMUSR];
   envioCliente.operacion = REGISTER;
   envioCliente.cliente = user;
-  printf("REGISTRO WRITE\n=> %d", user.id);
   if(write(server, &envioCliente , sizeof(envioCliente)) == -1)
   {
     perror("En escritura");
@@ -547,6 +544,9 @@ void enviarTweet(Cliente user, int server, EnvioCliente envioCliente, EnvioServe
       }
     }
   }
+  else{
+    printf("Se cancelo el envio del tweet.\nRuta de la imagen incorrecta.\n");
+  }
 }
 
 /*
@@ -604,17 +604,17 @@ int main (int argc, char **argv)
    Cualquier otro caso -> registro exitoso
    */
   user.pipe_id = registrar(envioCliente, envioServer, user, server);
-  printf("Fin REGISTRO\n");
 
   //Validacion de registro exitoso del cliente en el servidor
   if(user.pipe_id != -1){
-    printf("HOLA ENTRE A \n");
     //Ciclo de control de opciones sobre el cliente
     do
     {
       //Impresion del menu para el cliente
-      printf("Menu:\n1. Follow\n2. Unfollow\n3. Tweet\n4. Recuperar tweets\n");
-      printf("5. Desconexion\n\n> ");
+      printf("\n++++++++++++++++++++++++++++++++++++++++++++++++\n");
+      printf("\n\t\tMenu:\n\t1. Follow\n\t2. Unfollow\n\t3. Tweet\n\t4. Recuperar tweets\n");
+      printf("\t5. Desconexion\n\n ");
+      printf("\n++++++++++++++++++++++++++++++++++++++++++++++++\n>");
       //Lectura de la opcion del cliente
       scanf("%d", &opcion);
       while(getchar() != '\n');
