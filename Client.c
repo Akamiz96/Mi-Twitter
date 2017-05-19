@@ -654,12 +654,7 @@ int main (int argc, char **argv)
     } while(!descon);//Fin ciclo de control
   }//Fin if
   else{
-    if(user.pipe_id == -1){
-      pipe_idNo = abrir_pipe(user.pipe_cliente, O_RDONLY);
-      if (read (pipe_idNo, &envioServer, sizeof(envioServer)) == -1) {
-        perror("En lectura");
-      }
-    }
+    unlink(user.pipe_cliente);
     exit(1);
   }
   exit(0);
